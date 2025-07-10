@@ -1,0 +1,143 @@
+.master-detail {
+  display: flex;
+  flex: 1;
+  height: calc(100vh - 40px);
+  position: relative;
+}
+
+.master-detail::before {
+  content: '├';
+  position: absolute;
+  left: 300px;
+  top: 0;
+  color: var(--border-color);
+  font-size: 14px;
+  line-height: 40px;
+  z-index: 10;
+}
+
+.master-pane {
+  width: 300px;
+  background-color: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.detail-pane {
+  flex: 1;
+  background-color: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pane-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  background-color: var(--bg-secondary);
+}
+
+.header-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-bright);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.header-line {
+  flex: 1;
+  color: var(--text-secondary);
+  font-size: 10px;
+  overflow: hidden;
+  opacity: 0.5;
+}
+
+.master-footer {
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+}
+
+.add-repo-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 13px;
+  border: 1px dashed var(--text-secondary);
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.add-repo-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.add-repo-btn:hover::before {
+  left: 100%;
+}
+
+.status-bar {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  padding: 10px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-text {
+  flex: 1;
+}
+
+.status-progress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.progress-blocks {
+  display: flex;
+  gap: 1px;
+}
+
+.progress-block {
+  width: 8px;
+  height: 12px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+}
+
+.progress-block.filled {
+  background-color: var(--text-primary);
+  box-shadow: 0 0 3px var(--text-primary);
+}
+
+@media (max-width: 800px) {
+  .master-pane {
+    width: 250px;
+  }
+  
+  .master-detail::before {
+    left: 250px;
+  }
+}
