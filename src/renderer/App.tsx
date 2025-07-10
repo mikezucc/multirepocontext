@@ -25,21 +25,15 @@ function App() {
       setRepositories(repos)
     }
 
-    const handleRepoAdded = (repo: Repository) => {
-      setRepositories(prev => [...prev, repo])
-    }
-
     const handleRepoRemoved = (data: { id: string }) => {
       setRepositories(prev => prev.filter(r => r.id !== data.id))
     }
 
     window.electronAPI.on('repository-status', handleRepoStatus)
-    window.electronAPI.on('repository-added', handleRepoAdded)
     window.electronAPI.on('repository-removed', handleRepoRemoved)
 
     return () => {
       window.electronAPI.removeListener('repository-status', handleRepoStatus)
-      window.electronAPI.removeListener('repository-added', handleRepoAdded)
       window.electronAPI.removeListener('repository-removed', handleRepoRemoved)
     }
   }, [])

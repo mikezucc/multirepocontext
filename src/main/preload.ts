@@ -17,7 +17,6 @@ const api = {
   on: (channel: string, callback: Function) => {
     const validChannels = [
       'repository-status', 
-      'repository-added',
       'repository-removed',
       'analysis-update', 
       'documentation-ready',

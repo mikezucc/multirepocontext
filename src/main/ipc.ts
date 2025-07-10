@@ -39,7 +39,9 @@ export class IpcHandler {
         }
 
         this.repositories.set(repository.id, repository)
-        this.sendToRenderer('repository-added', repository)
+        
+        // Send updated repository list
+        this.sendToRenderer('repository-status', Array.from(this.repositories.values()))
         
         // Send to daemon
         this.sendToDaemon('add-repository', repository)
