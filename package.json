@@ -16,6 +16,7 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/gitignore-parser": "^0.0.3",
     "@types/node": "^24.0.13",
     "@vitejs/plugin-react": "^4.6.0",
     "electron": "^37.2.1",
@@ -32,6 +33,7 @@
     "@types/react-dom": "^19.1.6",
     "@types/uuid": "^10.0.0",
     "chokidar": "^4.0.3",
+    "gitignore-parser": "^0.0.2",
     "marked": "^16.0.0",
     "prismjs": "^1.30.0",
     "react": "^19.1.0",

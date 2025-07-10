@@ -1,8 +1,9 @@
-import { watch } from 'chokidar'
+import { watch, FSWatcher } from 'chokidar'
 import { Anthropic } from '@anthropic-ai/sdk'
 import * as path from 'path'
 import { promises as fs } from 'fs'
 import { Repository, Documentation, AnalysisProgress } from '../shared/types'
+import * as gitignoreParser from 'gitignore-parser'
 
 interface DaemonConfig {
   apiKey: string
@@ -16,10 +17,14 @@ interface IpcMessage {
 
 class MDgentDaemon {
   private anthropic: Anthropic | null = null
-  private watchers: Map<string, any> = new Map()
+  private watchers: Map<string, FSWatcher> = new Map()
   private repositories: Map<string, Repository> = new Map()
   private analysisQueue: string[] = []
   private isAnalyzing = false
+  private maxWatchers = 100 // Limit concurrent watchers
+  private batchSize = 10 // Process files in batches
+  private watchDepth = 3 // Maximum directory depth to watch
+  private gitignores: Map<string, any> = new Map()
 
   constructor() {
     this.setupIpc()
@@ -65,36 +70,100 @@ class MDgentDaemon {
   private async addRepository(repo: Repository) {
     this.repositories.set(repo.id, repo)
     
-    // Set up file watcher
-    const watcher = watch(repo.path, {
-      ignored: [
-        '**/node_modules/**',
-        '**/.git/**',
-        '**/dist/**',
-        '**/build/**',
-        '**/*.mdgent.md'
-      ],
-      persistent: true,
-      ignoreInitial: true
-    })
-
-    watcher.on('add', (filePath) => this.onFileAdded(repo.id, filePath))
-    watcher.on('change', (filePath) => this.onFileChanged(repo.id, filePath))
-    watcher.on('unlink', (filePath) => this.onFileRemoved(repo.id, filePath))
-
-    this.watchers.set(repo.id, watcher)
+    // Load gitignore
+    await this.loadGitignore(repo.path)
     
-    // Start initial analysis
+    // Set up progressive file watching
+    await this.setupProgressiveWatcher(repo.id, repo.path)
+    
+    // Start initial analysis with batching
     await this.analyzeRepository(repo.id)
   }
 
+  private async loadGitignore(repoPath: string) {
+    try {
+      const gitignorePath = path.join(repoPath, '.gitignore')
+      const gitignoreContent = await fs.readFile(gitignorePath, 'utf-8')
+      const compiled = gitignoreParser.compile(gitignoreContent)
+      this.gitignores.set(repoPath, compiled)
+    } catch (error) {
+      // No gitignore file, use default ignores
+      const defaultIgnores = `
+node_modules
+.git
+dist
+build
+out
+*.log
+.DS_Store
+.env
+.env.local
+*.mdgent.md
+`
+      const compiled = gitignoreParser.compile(defaultIgnores)
+      this.gitignores.set(repoPath, compiled)
+    }
+  }
+
+  private async setupProgressiveWatcher(repoId: string, repoPath: string, currentDepth = 0) {
+    if (currentDepth > this.watchDepth) return
+    if (this.watchers.size >= this.maxWatchers) return
+
+    const gitignore = this.gitignores.get(repoPath)
+    
+    // Watch only the current directory level
+    const watcher = watch(repoPath, {
+      ignored: (filePath: string) => {
+        const relativePath = path.relative(repoPath, filePath)
+        if (!relativePath) return false
+        
+        // Check gitignore
+        if (gitignore && gitignore.denies(relativePath)) {
+          return true
+        }
+        
+        // Additional hard-coded ignores
+        const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out']
+        const parts = relativePath.split(path.sep)
+        return parts.some(part => hardIgnores.includes(part))
+      },
+      persistent: true,
+      ignoreInitial: true,
+      depth: 0, // Only watch immediate children
+      awaitWriteFinish: {
+        stabilityThreshold: 300,
+        pollInterval: 100
+      }
+    })
+
+    watcher.on('add', (filePath) => this.onFileAdded(repoId, filePath))
+    watcher.on('change', (filePath) => this.onFileChanged(repoId, filePath))
+    watcher.on('unlink', (filePath) => this.onFileRemoved(repoId, filePath))
+    watcher.on('addDir', async (dirPath) => {
+      // Progressively add watchers for subdirectories
+      if (dirPath !== repoPath) {
+        await this.setupProgressiveWatcher(repoId, dirPath, currentDepth + 1)
+      }
+    })
+
+    this.watchers.set(`${repoId}-${repoPath}`, watcher)
+  }
+
   private removeRepository(repoId: string) {
-    const watcher = this.watchers.get(repoId)
-    if (watcher) {
-      watcher.close()
-      this.watchers.delete(repoId)
+    // Close all watchers for this repository
+    for (const [key, watcher] of this.watchers.entries()) {
+      if (key.startsWith(`${repoId}-`)) {
+        watcher.close()
+        this.watchers.delete(key)
+      }
     }
     this.repositories.delete(repoId)
+    
+    // Clean up gitignore cache
+    const repo = this.repositories.get(repoId)
+    if (repo) {
+      this.gitignores.delete(repo.path)
+    }
   }
 
   private async analyzeRepository(repoId: string) {
@@ -109,21 +178,32 @@ class MDgentDaemon {
 
       this.updateRepoStatus(repoId, 'analyzing')
       
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-        const progress: AnalysisProgress = {
-          repositoryId: repoId,
-          currentFile: file,
-          progress: (i / totalFiles) * 100,
-          totalFiles,
-          processedFiles: i,
-          tokensUsed: 0,
-          estimatedCost: 0
-        }
+      // Process files in batches to avoid overwhelming the system
+      for (let i = 0; i < files.length; i += this.batchSize) {
+        const batch = files.slice(i, i + this.batchSize)
         
-        this.sendMessage('analysis-progress', progress)
+        // Process batch concurrently but with a limit
+        await Promise.all(
+          batch.map(async (file, batchIndex) => {
+            const fileIndex = i + batchIndex
+            const progress: AnalysisProgress = {
+              repositoryId: repoId,
+              currentFile: file,
+              progress: (fileIndex / totalFiles) * 100,
+              totalFiles,
+              processedFiles: fileIndex,
+              tokensUsed: 0,
+              estimatedCost: 0
+            }
+            
+            this.sendMessage('analysis-progress', progress)
+            
+            await this.analyzeFile(repoId, file)
+          })
+        )
         
-        await this.analyzeFile(repoId, file)
+        // Small delay between batches to prevent resource exhaustion
+        await new Promise(resolve => setTimeout(resolve, 100))
       }
 
       this.updateRepoStatus(repoId, 'ready')
@@ -135,23 +215,41 @@ class MDgentDaemon {
   private async scanRepository(repoPath: string): Promise<string[]> {
     const files: string[] = []
     const extensions = ['.ts', '.tsx', '.js', '.jsx', '.py', '.java', '.go', '.rs', '.cpp', '.c']
+    const gitignore = this.gitignores.get(repoPath)
+    const maxFiles = 1000 // Limit total files to prevent memory issues
     
-    async function scan(dir: string) {
-      const entries = await fs.readdir(dir, { withFileTypes: true })
+    const scan = async (dir: string, depth = 0): Promise<void> => {
+      if (files.length >= maxFiles) return
+      if (depth > this.watchDepth * 2) return // Scan deeper than watch for initial analysis
       
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name)
+      try {
+        const entries = await fs.readdir(dir, { withFileTypes: true })
         
-        if (entry.isDirectory()) {
-          if (!['node_modules', '.git', 'dist', 'build'].includes(entry.name)) {
-            await scan(fullPath)
+        for (const entry of entries) {
+          if (files.length >= maxFiles) break
+          
+          const fullPath = path.join(dir, entry.name)
+          const relativePath = path.relative(repoPath, fullPath)
+          
+          // Check gitignore
+          if (gitignore && gitignore.denies(relativePath)) {
+            continue
           }
-        } else if (entry.isFile()) {
-          const ext = path.extname(entry.name)
-          if (extensions.includes(ext)) {
-            files.push(fullPath)
+          
+          if (entry.isDirectory()) {
+            const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.cache', 'coverage']
+            if (!hardIgnores.includes(entry.name) && !entry.name.startsWith('.')) {
+              await scan(fullPath, depth + 1)
+            }
+          } else if (entry.isFile()) {
+            const ext = path.extname(entry.name)
+            if (extensions.includes(ext) && !entry.name.endsWith('.mdgent.md')) {
+              files.push(fullPath)
+            }
           }
         }
+      } catch (error) {
+        console.error(`Error scanning directory ${dir}:`, error)
       }
     }
     
