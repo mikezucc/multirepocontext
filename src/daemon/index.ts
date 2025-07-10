@@ -63,6 +63,9 @@ class MDgentDaemon {
       case 'analyze-repository':
         await this.analyzeRepository(message.data.id)
         break
+      case 'get-directory-tree':
+        await this.getDirectoryTree(message.data.id)
+        break
     }
   }
 
@@ -90,9 +93,9 @@ class MDgentDaemon {
     console.log('[DAEMON] Setting up file watchers for:', repo.path)
     await this.setupProgressiveWatcher(repo.id, repo.path)
     
-    // Start initial analysis with batching
-    console.log('[DAEMON] Starting initial analysis for:', repo.path)
-    await this.analyzeRepository(repo.id)
+    // Don't start analysis automatically - wait for explicit request
+    console.log('[DAEMON] Repository added, waiting for scan request')
+    this.updateRepoStatus(repo.id, 'idle')
   }
 
   private async loadGitignore(repoPath: string) {
@@ -427,6 +430,92 @@ Format the response as markdown suitable for a README file.`
     
     this.isAnalyzing = false
     this.processQueue()
+  }
+
+  private async getDirectoryTree(repoId: string) {
+    const repo = this.repositories.get(repoId)
+    if (!repo) {
+      console.log('[DAEMON] Repository not found for tree:', repoId)
+      console.log('[DAEMON] Available repositories:', Array.from(this.repositories.keys()))
+      return
+    }
+
+    console.log('[DAEMON] Building directory tree for:', repo.path)
+    
+    interface TreeNode {
+      name: string
+      path: string
+      type: 'file' | 'directory'
+      children?: TreeNode[]
+      isMdgent?: boolean
+    }
+
+    const buildTree = async (dirPath: string, depth = 0): Promise<TreeNode[]> => {
+      if (depth > 10) return [] // Limit depth to prevent infinite recursion
+      
+      const nodes: TreeNode[] = []
+      const gitignore = this.gitignores.get(repo.path)
+      
+      try {
+        const entries = await fs.readdir(dirPath, { withFileTypes: true })
+        
+        for (const entry of entries) {
+          const fullPath = path.join(dirPath, entry.name)
+          console.log('[DAEMON] Processing entry:', fullPath)
+          const relativePath = path.relative(repo.path, fullPath)
+          
+          // Skip gitignored files
+          if (gitignore && gitignore.denies(relativePath)) {
+            continue
+          }
+          
+          // Skip hidden files/folders except .gitignore
+          if (entry.name.startsWith('.') && entry.name !== '.gitignore') {
+            continue
+          }
+          
+          // Skip common build/dependency folders
+          const skipDirs = ['node_modules', 'dist', 'build', 'out', '.git', 'coverage', '.next']
+          if (entry.isDirectory() && skipDirs.includes(entry.name)) {
+            continue
+          }
+          
+          const node: TreeNode = {
+            name: entry.name,
+            path: relativePath,
+            type: entry.isDirectory() ? 'directory' : 'file',
+            isMdgent: entry.name.endsWith('.mdgent.md')
+          }
+          
+          if (entry.isDirectory()) {
+            node.children = await buildTree(fullPath, depth + 1)
+          }
+          
+          nodes.push(node)
+        }
+        
+        // Sort: directories first, then files, mdgent files highlighted
+        nodes.sort((a, b) => {
+          if (a.type !== b.type) return a.type === 'directory' ? -1 : 1
+          if (a.isMdgent !== b.isMdgent) return a.isMdgent ? -1 : 1
+          return a.name.localeCompare(b.name)
+        })
+        
+      } catch (error) {
+        console.error('[DAEMON] Error reading directory:', dirPath, error)
+      }
+      
+      return nodes
+    }
+    
+    const tree = await buildTree(repo.path)
+    
+    this.sendMessage('directory-tree', {
+      repositoryId: repoId,
+      tree
+    })
+    
+    console.log('[DAEMON] Directory tree sent for:', repo.path)
   }
 }
 

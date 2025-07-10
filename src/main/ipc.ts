@@ -74,6 +74,17 @@ export class IpcHandler {
       await this.setApiKey(data.apiKey)
       this.sendToDaemon('configure', { apiKey: data.apiKey })
     })
+
+    ipcMain.on('get-directory-tree', (event, data) => {
+      console.log('IPC: get-directory-tree request received for:', data)
+      const { id } = data
+      this.sendToDaemon('get-directory-tree', { id })
+    })
+
+    ipcMain.on('scan-repository', (event, data) => {
+      const { id } = data
+      this.sendToDaemon('analyze-repository', { id })
+    })
   }
 
   private startDaemon() {
@@ -173,6 +184,10 @@ export class IpcHandler {
           affectedRepo.lastUpdated = new Date()
           affectedRepo.documentCount = (affectedRepo.documentCount || 0) + 1
         }
+        break
+      
+      case 'directory-tree':
+        this.sendToRenderer('directory-tree', message.data)
         break
     }
   }

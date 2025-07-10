@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { marked } from 'marked'
 import { Repository } from '@shared/types'
+import DirectoryTree from './DirectoryTree'
 import './DocumentationViewer.css'
 
 interface DocumentationViewerProps {
@@ -24,6 +25,8 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
 }) => {
   const [html, setHtml] = useState('')
   const [currentDoc, setCurrentDoc] = useState(documentation)
+  const [selectedFile, setSelectedFile] = useState<string | null>(null)
+  const [showTree, setShowTree] = useState(true)
 
   useEffect(() => {
     const handleDocReady = (data: { repositoryId: string, content: string }) => {
@@ -120,6 +123,38 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
           <div className="error-text">
             Error analyzing repository
             {repository.error && <div className="error-detail">{repository.error}</div>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show directory tree for idle repositories
+  if (repository.status === 'idle') {
+    return (
+      <div className="documentation-viewer with-tree">
+        <div className="tree-panel">
+          <DirectoryTree 
+            repositoryId={repository.id}
+            onFileSelect={setSelectedFile}
+          />
+        </div>
+        <div className="content-panel">
+          <div className="idle-state">
+            <div className="idle-icon">⚡</div>
+            <h3>Repository Ready for Analysis</h3>
+            <p>This repository hasn't been analyzed yet. Click the button below to scan all files and generate documentation.</p>
+            <button 
+              className="scan-button"
+              onClick={() => window.electronAPI.send('scan-repository', { id: repository.id })}
+            >
+              Start Analysis
+            </button>
+            {selectedFile && (
+              <div className="selected-file">
+                Selected: {selectedFile}
+              </div>
+            )}
           </div>
         </div>
       </div>
