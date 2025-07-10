@@ -16,16 +16,16 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
   const getStatusIcon = (status: Repository['status']) => {
     switch (status) {
       case 'idle':
-        return '○'
+        return '□'
       case 'scanning':
       case 'analyzing':
-        return '◐'
+        return '◧'
       case 'ready':
-        return '●'
+        return '■'
       case 'error':
-        return '×'
+        return '⊗'
       default:
-        return '○'
+        return '□'
     }
   }
 
