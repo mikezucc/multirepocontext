@@ -31,8 +31,15 @@ class MDgentDaemon {
   }
 
   private setupIpc() {
+    console.log('[DAEMON] Setting up IPC communication')
     process.on('message', (message: IpcMessage) => {
+      console.log('[DAEMON] Received IPC message:', message.type, message.data)
       this.handleMessage(message)
+    })
+    
+    process.on('disconnect', () => {
+      console.log('[DAEMON] IPC disconnected, shutting down')
+      process.exit(0)
     })
   }
 
@@ -60,23 +67,31 @@ class MDgentDaemon {
   }
 
   private configure(config: DaemonConfig) {
+    console.log('[DAEMON] Configuring daemon')
     if (config.apiKey) {
+      console.log('[DAEMON] API key received, initializing Anthropic client')
       this.anthropic = new Anthropic({
         apiKey: config.apiKey
       })
+    } else {
+      console.log('[DAEMON] WARNING: No API key provided')
     }
   }
 
   private async addRepository(repo: Repository) {
+    console.log('[DAEMON] Adding repository:', repo.path)
     this.repositories.set(repo.id, repo)
     
     // Load gitignore
+    console.log('[DAEMON] Loading gitignore for:', repo.path)
     await this.loadGitignore(repo.path)
     
     // Set up progressive file watching
+    console.log('[DAEMON] Setting up file watchers for:', repo.path)
     await this.setupProgressiveWatcher(repo.id, repo.path)
     
     // Start initial analysis with batching
+    console.log('[DAEMON] Starting initial analysis for:', repo.path)
     await this.analyzeRepository(repo.id)
   }
 
@@ -86,8 +101,9 @@ class MDgentDaemon {
       const gitignoreContent = await fs.readFile(gitignorePath, 'utf-8')
       const compiled = gitignoreParser.compile(gitignoreContent)
       this.gitignores.set(repoPath, compiled)
+      console.log('[DAEMON] Loaded .gitignore from:', gitignorePath)
     } catch (error) {
-      // No gitignore file, use default ignores
+      console.log('[DAEMON] No .gitignore found, using default ignores')
       const defaultIgnores = `
 node_modules
 .git
@@ -106,8 +122,14 @@ out
   }
 
   private async setupProgressiveWatcher(repoId: string, repoPath: string, currentDepth = 0) {
-    if (currentDepth > this.watchDepth) return
-    if (this.watchers.size >= this.maxWatchers) return
+    if (currentDepth > this.watchDepth) {
+      console.log('[DAEMON] Max watch depth reached for:', repoPath)
+      return
+    }
+    if (this.watchers.size >= this.maxWatchers) {
+      console.log('[DAEMON] Max watchers limit reached:', this.watchers.size)
+      return
+    }
 
     const gitignore = this.gitignores.get(repoPath)
     
@@ -147,6 +169,7 @@ out
     })
 
     this.watchers.set(`${repoId}-${repoPath}`, watcher)
+    console.log('[DAEMON] Watcher created for:', repoPath, 'Total watchers:', this.watchers.size)
   }
 
   private removeRepository(repoId: string) {
@@ -168,13 +191,23 @@ out
 
   private async analyzeRepository(repoId: string) {
     const repo = this.repositories.get(repoId)
-    if (!repo || !this.anthropic) return
+    if (!repo) {
+      console.log('[DAEMON] Repository not found:', repoId)
+      return
+    }
+    if (!this.anthropic) {
+      console.log('[DAEMON] Cannot analyze - Anthropic client not initialized (missing API key?)')
+      this.updateRepoStatus(repoId, 'error', 'API key not configured')
+      return
+    }
 
+    console.log('[DAEMON] Starting repository analysis:', repo.path)
     this.updateRepoStatus(repoId, 'scanning')
     
     try {
       const files = await this.scanRepository(repo.path)
       const totalFiles = files.length
+      console.log('[DAEMON] Found', totalFiles, 'files to analyze in:', repo.path)
 
       this.updateRepoStatus(repoId, 'analyzing')
       
@@ -198,6 +231,7 @@ out
             
             this.sendMessage('analysis-progress', progress)
             
+            console.log('[DAEMON] Analyzing file', fileIndex + 1, 'of', totalFiles, ':', file)
             await this.analyzeFile(repoId, file)
           })
         )
@@ -207,7 +241,9 @@ out
       }
 
       this.updateRepoStatus(repoId, 'ready')
+      console.log('[DAEMON] Repository analysis complete:', repo.path)
     } catch (error) {
+      console.error('[DAEMON] Error analyzing repository:', error)
       this.updateRepoStatus(repoId, 'error', error.message)
     }
   }
@@ -254,11 +290,15 @@ out
     }
     
     await scan(repoPath)
+    console.log('[DAEMON] Scan complete. Found', files.length, 'files matching criteria')
     return files
   }
 
   private async analyzeFile(repoId: string, filePath: string) {
-    if (!this.anthropic) return
+    if (!this.anthropic) {
+      console.log('[DAEMON] Skipping file analysis - no Anthropic client')
+      return
+    }
 
     try {
       const content = await fs.readFile(filePath, 'utf-8')
@@ -295,9 +335,10 @@ Format the response as markdown suitable for a README file.`
         : ''
 
       await this.saveDocumentation(repoId, filePath, documentation)
+      console.log('[DAEMON] Successfully analyzed:', relativePath)
       
     } catch (error) {
-      console.error(`Error analyzing file ${filePath}:`, error)
+      console.error(`[DAEMON] Error analyzing file ${filePath}:`, error)
     }
   }
 
@@ -334,6 +375,7 @@ Format the response as markdown suitable for a README file.`
     }
 
     await fs.writeFile(docPath, newContent)
+    console.log('[DAEMON] Documentation saved to:', docPath)
     
     this.sendMessage('documentation-updated', {
       repositoryId: repoId,
@@ -352,10 +394,12 @@ Format the response as markdown suitable for a README file.`
   }
 
   private onFileAdded(repoId: string, filePath: string) {
+    console.log('[DAEMON] File added:', filePath)
     this.queueAnalysis(repoId, filePath)
   }
 
   private onFileChanged(repoId: string, filePath: string) {
+    console.log('[DAEMON] File changed:', filePath)
     this.queueAnalysis(repoId, filePath)
   }
 
@@ -367,6 +411,7 @@ Format the response as markdown suitable for a README file.`
     const key = `${repoId}:${filePath}`
     if (!this.analysisQueue.includes(key)) {
       this.analysisQueue.push(key)
+      console.log('[DAEMON] Added to analysis queue:', filePath, 'Queue length:', this.analysisQueue.length)
       this.processQueue()
     }
   }
@@ -387,4 +432,6 @@ Format the response as markdown suitable for a README file.`
 
 // Start the daemon
 const daemon = new MDgentDaemon()
-console.log('MDgent daemon started')
+console.log('[DAEMON] MDgent daemon started')
+console.log('[DAEMON] Process ID:', process.pid)
+console.log('[DAEMON] Waiting for IPC messages...')

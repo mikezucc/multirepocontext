@@ -1,7 +1,7 @@
 .master-detail {
   display: flex;
   flex: 1;
-  height: calc(100vh - 48px);
+  height: calc(100vh - 48px - 32px); /* Account for titlebar and status bar */
   position: relative;
 }
 

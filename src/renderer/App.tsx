@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import MasterDetail from './components/MasterDetail'
 import SettingsModal from './components/SettingsModal'
+import StatusBar from './components/StatusBar'
 import { Repository } from '@shared/types'
 
 declare global {
@@ -60,6 +61,7 @@ function App() {
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
       />
+      <StatusBar repositories={repositories} />
     </div>
   )
 }

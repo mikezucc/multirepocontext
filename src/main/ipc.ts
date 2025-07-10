@@ -80,21 +80,67 @@ export class IpcHandler {
     const daemonPath = path.join(__dirname, 'daemon.js')
     
     this.daemon = spawn('node', [daemonPath], {
-      stdio: ['inherit', 'inherit', 'inherit', 'ipc']
+      stdio: ['inherit', 'pipe', 'pipe', 'ipc']
     })
 
     this.daemon.on('message', (message: any) => {
       this.handleDaemonMessage(message)
     })
 
+    // Capture daemon stdout
+    if (this.daemon.stdout) {
+      this.daemon.stdout.on('data', (data) => {
+        const lines = data.toString().split('\n').filter(Boolean)
+        lines.forEach((line: string) => {
+          console.log('Daemon:', line)
+          if (line.includes('[DAEMON]')) {
+            this.sendToRenderer('daemon-status', {
+              connected: true,
+              message: line.replace('[DAEMON]', '').trim(),
+              type: line.includes('ERROR') ? 'error' : line.includes('WARNING') ? 'warning' : 'info'
+            })
+          }
+        })
+      })
+    }
+
+    // Capture daemon stderr
+    if (this.daemon.stderr) {
+      this.daemon.stderr.on('data', (data) => {
+        console.error('Daemon Error:', data.toString())
+        this.sendToRenderer('daemon-status', {
+          connected: true,
+          message: data.toString(),
+          type: 'error'
+        })
+      })
+    }
+
     this.daemon.on('error', (error) => {
       console.error('Daemon error:', error)
+      this.sendToRenderer('daemon-status', {
+        connected: false,
+        message: `Daemon error: ${error.message}`,
+        type: 'error'
+      })
     })
 
     this.daemon.on('exit', (code) => {
       console.log(`Daemon exited with code ${code}`)
+      this.sendToRenderer('daemon-status', {
+        connected: false,
+        message: `Daemon exited with code ${code}`,
+        type: 'error'
+      })
       // Restart daemon if it crashes
       setTimeout(() => this.startDaemon(), 5000)
+    })
+
+    // Send initial daemon status
+    this.sendToRenderer('daemon-status', {
+      connected: true,
+      message: 'Daemon started',
+      type: 'info'
     })
 
     // Configure daemon with API key if available
