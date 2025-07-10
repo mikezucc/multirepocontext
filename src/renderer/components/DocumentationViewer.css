@@ -199,6 +199,81 @@
 }
 
 .markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+/* Language-specific code block styling */
+.markdown-content pre[class*="language-"] {
+  position: relative;
+}
+
+.markdown-content pre[class*="language-"]::before {
+  content: attr(class);
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 4px 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0 2px 0 2px;
+}
+
+.markdown-content pre.language-typescript::before,
+.markdown-content pre.language-ts::before {
+  content: "TypeScript";
+}
+
+.markdown-content pre.language-javascript::before,
+.markdown-content pre.language-js::before {
+  content: "JavaScript";
+}
+
+.markdown-content pre.language-python::before,
+.markdown-content pre.language-py::before {
+  content: "Python";
+}
+
+.markdown-content pre.language-java::before {
+  content: "Java";
+}
+
+.markdown-content pre.language-go::before {
+  content: "Go";
+}
+
+.markdown-content pre.language-rust::before,
+.markdown-content pre.language-rs::before {
+  content: "Rust";
+}
+
+.markdown-content pre.language-cpp::before,
+.markdown-content pre.language-c++::before {
+  content: "C++";
+}
+
+.markdown-content pre.language-c::before {
+  content: "C";
+}
+
+.markdown-content pre.language-bash::before,
+.markdown-content pre.language-sh::before {
+  content: "Bash";
+}
+
+.markdown-content pre.language-json::before {
+  content: "JSON";
+}
+
+.markdown-content pre code {
   background: none;
   padding: 0;
   border: none;

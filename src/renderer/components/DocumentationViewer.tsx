@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { marked } from 'marked'
-import Prism from 'prismjs'
 import { Repository } from '@shared/types'
 import './DocumentationViewer.css'
 
@@ -42,24 +41,42 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
 
   useEffect(() => {
     if (currentDoc) {
-      const renderer = new marked.Renderer()
-      
-      renderer.code = function(code, language) {
-        if (language && Prism.languages[language]) {
-          const highlighted = Prism.highlight(code, Prism.languages[language], language)
-          return `<pre class="language-${language}"><code class="language-${language}">${highlighted}</code></pre>`
-        }
-        return `<pre><code>${code}</code></pre>`
-      }
-
-      marked.setOptions({
-        renderer,
+      // Configure marked with custom renderer
+      marked.use({
+        renderer: {
+          code(code: string, infostring: string | undefined) {
+            const lang = (infostring || '').match(/\S*/)?.[0] || ''
+            
+            // Escape HTML entities
+            const escapedCode = code.replace(/[&<>'"]/g, (char) => {
+              const escapeMap: {[key: string]: string} = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+              }
+              return escapeMap[char]
+            })
+            
+            // Return formatted code block with language class
+            if (lang) {
+              return `<pre class="language-${lang}"><code class="language-${lang}">${escapedCode}</code></pre>`
+            }
+            return `<pre><code>${escapedCode}</code></pre>`
+          }
+        },
         gfm: true,
         breaks: true
       })
 
-      const htmlContent = marked(currentDoc)
-      setHtml(htmlContent as string)
+      try {
+        const htmlContent = marked.parse(currentDoc)
+        setHtml(htmlContent as string)
+      } catch (error) {
+        console.error('Markdown parsing error:', error)
+        setHtml('<p>Error parsing markdown content</p>')
+      }
     }
   }, [currentDoc])
 
