@@ -24,7 +24,6 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
       <div className="master-pane">
         <div className="pane-header">
           <span className="header-text">REPOSITORIES</span>
-          <span className="header-line">{'─'.repeat(20)}</span>
         </div>
         <RepositoryList
           repositories={repositories}
@@ -39,8 +38,7 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
       </div>
       <div className="detail-pane">
         <div className="pane-header">
-          <span className="header-text">README.mdgent.md</span>
-          <span className="header-line">{'─'.repeat(40)}</span>
+          <span className="header-text">{selectedRepo?.name ?? '-'}</span>
         </div>
         <DocumentationViewer
           repository={selectedRepo}

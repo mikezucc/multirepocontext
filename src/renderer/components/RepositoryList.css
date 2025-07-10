@@ -17,7 +17,7 @@
 
 .empty-icon {
   font-size: 48px;
-  color: var(--text-secondary);
+  color: var(--border-color);
   margin-bottom: 20px;
   font-weight: 300;
 }
@@ -40,44 +40,30 @@
 .repo-item {
   display: flex;
   align-items: center;
-  padding: 12px 20px;
+  padding: 14px 24px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border-left: 3px solid transparent;
+  border-left: 4px solid transparent;
   position: relative;
-}
-
-.repo-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 0;
-  background-color: var(--text-bright);
-  transition: height 0.2s ease;
+  margin: 2px 0;
 }
 
 .repo-item:hover {
-  background-color: rgba(0, 255, 65, 0.05);
-}
-
-.repo-item:hover::before {
-  height: 60%;
+  background-color: var(--bg-secondary);
+  border-left-color: var(--border-color);
 }
 
 .repo-item.selected {
-  background-color: rgba(0, 255, 65, 0.1);
-  border-left-color: var(--text-bright);
+  background-color: var(--accent-beige);
+  border-left-color: var(--text-primary);
 }
 
 .repo-item.selected::after {
-  content: '>';
+  content: '▸';
   position: absolute;
-  left: 8px;
-  color: var(--text-bright);
-  animation: blink 1s step-end infinite;
+  left: 10px;
+  color: var(--text-primary);
+  font-size: 12px;
 }
 
 .status-icon {
@@ -93,12 +79,11 @@
 
 .status-icon.processing {
   color: var(--warning-color);
-  animation: spin 2s linear infinite;
+  animation: spin 3s linear infinite;
 }
 
 .status-icon.ready {
   color: var(--text-bright);
-  text-shadow: 0 0 5px var(--text-bright);
 }
 
 .status-icon.error {
