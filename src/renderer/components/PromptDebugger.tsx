@@ -60,6 +60,7 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
     results: true,
     detail: true
   })
+  const [resetMessage, setResetMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (repositoryId) {
@@ -102,12 +103,28 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
       }
     }
 
+    // Listen for reset confirmation
+    const handleResetConfirmation = (data: { repositoryId: string, success: boolean, error?: string }) => {
+      if (data.repositoryId === repositoryId) {
+        if (data.success) {
+          setResetMessage('Vector database has been reset successfully.')
+          // Auto-hide message after 3 seconds
+          setTimeout(() => setResetMessage(null), 3000)
+        } else {
+          setResetMessage(`Failed to reset database: ${data.error || 'Unknown error'}`)
+          setTimeout(() => setResetMessage(null), 5000)
+        }
+      }
+    }
+
     window.electronAPI.on('vector-stats', handleVectorStats)
     window.electronAPI.on('debug-search-results', handleSearchResults)
+    window.electronAPI.on('vector-database-reset', handleResetConfirmation)
 
     return () => {
       window.electronAPI.removeListener('vector-stats', handleVectorStats)
       window.electronAPI.removeListener('debug-search-results', handleSearchResults)
+      window.electronAPI.removeListener('vector-database-reset', handleResetConfirmation)
     }
   }, [repositoryId])
 
@@ -122,6 +139,24 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
       query,
       limit: 20 
     })
+  }
+
+  const handleResetDatabase = () => {
+    if (!repositoryId) return
+    
+    const confirmed = window.confirm(
+      'Are you sure you want to reset the vector database for this repository?\n\n' +
+      'This will delete all embeddings and you will need to regenerate them.'
+    )
+    
+    if (confirmed) {
+      window.electronAPI.send('reset-vector-database', { repositoryId })
+      // Reset local state
+      setStats(null)
+      setSearchResults(null)
+      setSelectedResult(null)
+      setQuery('')
+    }
   }
 
   const formatBytes = (bytes: number) => {
@@ -161,6 +196,21 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
           {repositoryName && <span style={{ fontWeight: 'normal', color: 'var(--text-secondary)' }}> - {repositoryName}</span>}
         </h2>
       </div>
+
+      {/* Reset Message */}
+      {resetMessage && (
+        <div style={{
+          padding: '12px 16px',
+          margin: '0 0 16px 0',
+          background: resetMessage.includes('Failed') ? 'var(--error-color)' : '#4ade80',
+          color: 'white',
+          fontSize: '13px',
+          borderRadius: '4px',
+          fontWeight: '500'
+        }}>
+          {resetMessage}
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="prompt-debugger-search">
@@ -232,6 +282,24 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
                       Last updated: {new Date(stats.lastUpdated).toLocaleString()}
                     </div>
                   )}
+                  <div style={{ marginTop: '16px' }}>
+                    <button
+                      onClick={handleResetDatabase}
+                      className="prompt-debugger-reset-button"
+                      style={{
+                        background: 'var(--error-color)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        fontWeight: '500'
+                      }}
+                    >
+                      [⚠] Reset Vector Database
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

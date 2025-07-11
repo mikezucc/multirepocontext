@@ -16,7 +16,8 @@ const api = {
       'setup-mcp-server',
       'regenerate-embeddings',
       'get-vector-stats',
-      'debug-search'
+      'debug-search',
+      'reset-vector-database'
     ]
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data)
@@ -36,7 +37,8 @@ const api = {
       'mcp-status',
       'embeddings-status',
       'vector-stats',
-      'debug-search-results'
+      'debug-search-results',
+      'vector-database-reset'
     ]
     console.log('Preload: Setting up listener for channel:', channel);
     if (validChannels.includes(channel)) {

@@ -378,6 +378,13 @@ Format the response as markdown suitable for a README file.`
 
         await this.saveDocumentation(repoId, filePath, documentation)
         console.log('[DAEMON] Successfully analyzed:', relativePath)
+
+        // index the file into the vector database as well
+        this.sendMessage('index-file', {
+          repositoryId: repoId,
+          filePath: filePath,
+          content: documentation
+        })
       } else {
         console.log('[DAEMON] File sent for indexing:', filePath)
       }

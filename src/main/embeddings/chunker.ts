@@ -169,38 +169,40 @@ export class DocumentChunker {
       return this.chunkMarkdown(content, filePath)
     }
     
-    // Handle code files
-    const codeExtensions: Record<string, string> = {
-      'js': 'javascript',
-      'jsx': 'javascript',
-      'ts': 'typescript',
-      'tsx': 'typescript',
-      'py': 'python',
-      'java': 'java',
-      'cpp': 'cpp',
-      'c': 'c',
-      'cs': 'csharp',
-      'go': 'go',
-      'rs': 'rust',
-      'rb': 'ruby',
-      'php': 'php',
-      'swift': 'swift',
-      'kt': 'kotlin',
-      'scala': 'scala',
-      'r': 'r',
-      'sql': 'sql',
-      'sh': 'bash',
-      'bash': 'bash',
-      'zsh': 'bash',
-      'fish': 'bash'
-    }
+    throw new Error(`CHUNKING NON-MARKDOWN FILE: file extension for chunking: ${extension}`)
     
-    if (extension && codeExtensions[extension]) {
-      return this.chunkCode(content, filePath, codeExtensions[extension])
-    }
+    // // Handle code files
+    // const codeExtensions: Record<string, string> = {
+    //   'js': 'javascript',
+    //   'jsx': 'javascript',
+    //   'ts': 'typescript',
+    //   'tsx': 'typescript',
+    //   'py': 'python',
+    //   'java': 'java',
+    //   'cpp': 'cpp',
+    //   'c': 'c',
+    //   'cs': 'csharp',
+    //   'go': 'go',
+    //   'rs': 'rust',
+    //   'rb': 'ruby',
+    //   'php': 'php',
+    //   'swift': 'swift',
+    //   'kt': 'kotlin',
+    //   'scala': 'scala',
+    //   'r': 'r',
+    //   'sql': 'sql',
+    //   'sh': 'bash',
+    //   'bash': 'bash',
+    //   'zsh': 'bash',
+    //   'fish': 'bash'
+    // }
     
-    // Default: treat as plain text and chunk by paragraphs
-    return this.chunkPlainText(content, filePath)
+    // if (extension && codeExtensions[extension]) {
+    //   return this.chunkCode(content, filePath, codeExtensions[extension])
+    // }
+    
+    // // Default: treat as plain text and chunk by paragraphs
+    // return this.chunkPlainText(content, filePath)
   }
 
   // Chunk plain text by paragraphs

@@ -211,6 +211,33 @@ export class IpcHandler {
         })
       }
     })
+
+    ipcMain.on('reset-vector-database', async (event, data) => {
+      const { repositoryId } = data
+      try {
+        console.log('IPC: reset-vector-database request received for:', repositoryId)
+        
+        // Delete all vector data for this repository
+        await documentIndexer.removeRepository(repositoryId)
+        
+        // Send success message
+        event.reply('vector-database-reset', { 
+          repositoryId, 
+          success: true 
+        })
+        
+        // Refresh vector stats
+        const stats = await this.getVectorStats(repositoryId)
+        event.reply('vector-stats', { repositoryId, stats })
+      } catch (error) {
+        console.error('IPC: Error resetting vector database:', error)
+        event.reply('vector-database-reset', { 
+          repositoryId, 
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to reset database' 
+        })
+      }
+    })
   }
 
   private startDaemon() {
