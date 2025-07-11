@@ -3,6 +3,7 @@ import MasterDetail from './components/MasterDetail'
 import SettingsModal from './components/SettingsModal'
 import StatusBar from './components/StatusBar'
 import TabBar from './components/TabBar'
+import TokenUsageMeter from './components/TokenUsageMeter'
 import { PromptDebugger } from './components/PromptDebugger'
 import { Repository } from '@shared/types'
 
@@ -56,6 +57,7 @@ function App() {
 
   return (
     <div className="app">
+      <TokenUsageMeter />
       <div className="titlebar">
         <div className="title">MDgent v0.1.0</div>
         <TabBar

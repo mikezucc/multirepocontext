@@ -4,6 +4,7 @@ import * as path from 'path'
 import { promises as fs } from 'fs'
 import { Repository, Documentation, AnalysisProgress } from '../shared/types'
 import * as gitignoreParser from 'gitignore-parser'
+import { countTokens } from '../shared/tokenUtils'
 
 interface DaemonConfig {
   apiKey: string
@@ -363,6 +364,9 @@ Please provide:
 
 Format the response as markdown suitable for a README file.`
 
+        // Count input tokens
+        const inputTokens = countTokens(prompt)
+        
         const response = await this.anthropic.messages.create({
           model: 'claude-3-opus-20240229',
           max_tokens: 2000,
@@ -375,9 +379,19 @@ Format the response as markdown suitable for a README file.`
         const documentation = response.content[0].type === 'text' 
           ? response.content[0].text 
           : ''
+        
+        // Count output tokens
+        const outputTokens = countTokens(documentation)
+        
+        // Send token usage to main process
+        this.sendMessage('track-token-usage', {
+          source: 'anthropic_api',
+          input: inputTokens,
+          output: outputTokens
+        })
 
         await this.saveDocumentation(repoId, filePath, documentation)
-        console.log('[DAEMON] Successfully analyzed:', relativePath)
+        console.log('[DAEMON] Successfully analyzed:', relativePath, `(${inputTokens} in, ${outputTokens} out tokens)`)
 
         // index the file into the vector database as well
         this.sendMessage('index-file', {

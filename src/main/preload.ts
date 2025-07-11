@@ -16,6 +16,7 @@ const api = {
       'setup-mcp-server',
       'regenerate-embeddings',
       'get-vector-stats',
+      'get-token-usage',
       'debug-search',
       'reset-vector-database'
     ]
@@ -37,6 +38,7 @@ const api = {
       'mcp-status',
       'embeddings-status',
       'vector-stats',
+      'token-usage-update',
       'debug-search-results',
       'vector-database-reset'
     ]

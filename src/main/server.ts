@@ -3,6 +3,7 @@ import { Server } from 'http'
 import { hybridSearch } from './vectordb/search'
 import { embeddingGenerator } from './embeddings/embeddings'
 import { vectorDB } from './vectordb/database'
+import { countTokens } from '../shared/tokenUtils'
 
 export class SearchServer {
   private app: express.Application
@@ -102,6 +103,13 @@ export class SearchServer {
             metadata: r.metadata
           }))
         }
+
+        // Track MCP server token usage
+        const inputTokens = countTokens(prompt)
+        const outputTokens = countTokens(JSON.stringify(response))
+        
+        await vectorDB.trackTokenUsage('mcp_server', 'input', inputTokens)
+        await vectorDB.trackTokenUsage('mcp_server', 'output', outputTokens)
 
         res.json(response)
       } catch (error) {

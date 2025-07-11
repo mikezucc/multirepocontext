@@ -179,6 +179,15 @@ export class IpcHandler {
         repository
       })
     })
+    
+    ipcMain.on('get-token-usage', async (event) => {
+      try {
+        const stats = await vectorDB.getTokenUsageStats()
+        event.reply('token-usage-update', stats)
+      } catch (error) {
+        console.error('[IPC] Error getting token usage:', error)
+      }
+    })
 
     ipcMain.on('get-vector-stats', async (event, data) => {
       const { id } = data
@@ -378,6 +387,10 @@ export class IpcHandler {
       case 'embeddings-status':
         this.sendToRenderer('embeddings-status', message.data)
         break
+        
+      case 'track-token-usage':
+        this.handleTokenUsage(message.data)
+        break
     }
   }
 
@@ -475,6 +488,28 @@ export class IpcHandler {
         searchTime,
         totalTime: Date.now() - startTime
       }
+    }
+  }
+
+  private async handleTokenUsage(data: { source: 'mcp_server' | 'anthropic_api'; input: number; output: number }) {
+    try {
+      const { source, input, output } = data
+      
+      // Track input tokens
+      if (input > 0) {
+        await vectorDB.trackTokenUsage(source, 'input', input)
+      }
+      
+      // Track output tokens
+      if (output > 0) {
+        await vectorDB.trackTokenUsage(source, 'output', output)
+      }
+      
+      // Get updated stats and send to renderer
+      const stats = await vectorDB.getTokenUsageStats()
+      this.sendToRenderer('token-usage-update', stats)
+    } catch (error) {
+      console.error('[IPC] Error tracking token usage:', error)
     }
   }
 }

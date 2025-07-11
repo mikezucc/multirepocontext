@@ -104,6 +104,37 @@ export class VectorDatabase {
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_documents_repository_id ON documents(repository_id)
     `)
+
+    // Token usage tracking tables
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS token_usage (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source TEXT NOT NULL, -- 'mcp_server' or 'anthropic_api'
+        usage_type TEXT NOT NULL, -- 'input' or 'output'
+        tokens INTEGER NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    // Daily aggregated token usage for efficient querying
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS token_usage_daily (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date DATE NOT NULL,
+        source TEXT NOT NULL,
+        input_tokens INTEGER DEFAULT 0,
+        output_tokens INTEGER DEFAULT 0,
+        UNIQUE(date, source)
+      )
+    `)
+
+    // Create index for efficient token usage queries
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_token_usage_timestamp ON token_usage(timestamp)
+    `)
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_token_usage_daily_date ON token_usage_daily(date)
+    `)
   }
 
   async close(): Promise<void> {
@@ -291,6 +322,89 @@ export class VectorDatabase {
       results: [],
       timing
     }
+  }
+
+  // Token usage tracking methods
+  async trackTokenUsage(source: 'mcp_server' | 'anthropic_api', usageType: 'input' | 'output', tokens: number): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized')
+    
+    // Insert into detailed usage table
+    const stmt = this.db.prepare(`
+      INSERT INTO token_usage (source, usage_type, tokens)
+      VALUES (?, ?, ?)
+    `)
+    stmt.run(source, usageType, tokens)
+    
+    // Update daily aggregated table
+    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
+    const updateStmt = this.db.prepare(`
+      INSERT INTO token_usage_daily (date, source, ${usageType}_tokens)
+      VALUES (?, ?, ?)
+      ON CONFLICT(date, source) 
+      DO UPDATE SET ${usageType}_tokens = ${usageType}_tokens + ?
+    `)
+    updateStmt.run(today, source, tokens, tokens)
+  }
+
+  async getTokenUsageStats(): Promise<{
+    today: { mcp: { input: number; output: number }; anthropic: { input: number; output: number } };
+    total: { mcp: { input: number; output: number }; anthropic: { input: number; output: number } };
+  }> {
+    if (!this.db) throw new Error('Database not initialized')
+    
+    const today = new Date().toISOString().split('T')[0]
+    
+    // Get today's usage
+    const todayStmt = this.db.prepare(`
+      SELECT source, input_tokens, output_tokens
+      FROM token_usage_daily
+      WHERE date = ?
+    `)
+    const todayRows = todayStmt.all(today) as Array<{ source: string; input_tokens: number; output_tokens: number }>
+    
+    // Get total usage
+    const totalStmt = this.db.prepare(`
+      SELECT source, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens
+      FROM token_usage_daily
+      GROUP BY source
+    `)
+    const totalRows = totalStmt.all() as Array<{ source: string; input_tokens: number; output_tokens: number }>
+    
+    // Initialize result structure
+    const result = {
+      today: {
+        mcp: { input: 0, output: 0 },
+        anthropic: { input: 0, output: 0 }
+      },
+      total: {
+        mcp: { input: 0, output: 0 },
+        anthropic: { input: 0, output: 0 }
+      }
+    }
+    
+    // Process today's data
+    todayRows.forEach(row => {
+      if (row.source === 'mcp_server') {
+        result.today.mcp.input = row.input_tokens
+        result.today.mcp.output = row.output_tokens
+      } else if (row.source === 'anthropic_api') {
+        result.today.anthropic.input = row.input_tokens
+        result.today.anthropic.output = row.output_tokens
+      }
+    })
+    
+    // Process total data
+    totalRows.forEach(row => {
+      if (row.source === 'mcp_server') {
+        result.total.mcp.input = row.input_tokens
+        result.total.mcp.output = row.output_tokens
+      } else if (row.source === 'anthropic_api') {
+        result.total.anthropic.input = row.input_tokens
+        result.total.anthropic.output = row.output_tokens
+      }
+    })
+    
+    return result
   }
 }
 
