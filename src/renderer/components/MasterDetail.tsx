@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import RepositoryList from './RepositoryList'
+import TabBar from './TabBar'
 import DocumentationViewer from './DocumentationViewer'
 import { Repository } from '@shared/types'
 import './MasterDetail.css'
@@ -19,21 +19,70 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
 }) => {
   const [documentation, setDocumentation] = useState<string>('')
 
+  const handleCloseRepo = (repo: Repository) => {
+    window.electronAPI.send('remove-repository', { id: repo.id })
+    if (selectedRepo?.id === repo.id) {
+      const remainingRepos = repositories.filter(r => r.id !== repo.id)
+      onSelectRepo(remainingRepos.length > 0 ? remainingRepos[0] : null)
+    }
+  }
+
   return (
     <div className="master-detail">
       <div className="master-pane">
-        <div className="pane-header">
-          <span className="header-text">REPOSITORIES</span>
-        </div>
-        <RepositoryList
+        <TabBar
           repositories={repositories}
           selectedRepo={selectedRepo}
           onSelectRepo={onSelectRepo}
+          onCloseRepo={handleCloseRepo}
+          onAddRepo={onAddRepo}
         />
-        <div className="master-footer">
-          <button onClick={onAddRepo} className="add-repo-btn">
-            [+] Add Repository
-          </button>
+        <div className="master-content">
+          {repositories.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">[ ]</div>
+              <div className="empty-text">No repositories added</div>
+              <div className="empty-hint">Click the + button to add your first repository</div>
+            </div>
+          ) : selectedRepo ? (
+            <div className="repo-info">
+              <div className="info-section">
+                <div className="info-label">PATH</div>
+                <div className="info-value">{selectedRepo.path}</div>
+              </div>
+              <div className="info-section">
+                <div className="info-label">STATUS</div>
+                <div className={`info-value status-${selectedRepo.status}`}>
+                  {selectedRepo.status.toUpperCase()}
+                </div>
+              </div>
+              {selectedRepo.documentCount && (
+                <div className="info-section">
+                  <div className="info-label">DOCUMENTS</div>
+                  <div className="info-value">{selectedRepo.documentCount}</div>
+                </div>
+              )}
+              {selectedRepo.error && (
+                <div className="info-section error">
+                  <div className="info-label">ERROR</div>
+                  <div className="info-value">{selectedRepo.error}</div>
+                </div>
+              )}
+              <button 
+                className="scan-btn"
+                onClick={() => window.electronAPI.send('scan-repository', { id: selectedRepo.id })}
+                disabled={selectedRepo.status === 'scanning' || selectedRepo.status === 'analyzing'}
+              >
+                {selectedRepo.status === 'scanning' || selectedRepo.status === 'analyzing' 
+                  ? '[◧] Scanning...' 
+                  : '[►] Scan Repository'}
+              </button>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-text">Select a repository tab</div>
+            </div>
+          )}
         </div>
       </div>
       <div className="detail-pane">

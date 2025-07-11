@@ -1,0 +1,147 @@
+.tab-bar {
+  background: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+  height: 36px;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 8px;
+  overflow: hidden;
+}
+
+.tabs-container {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  gap: 2px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  max-width: 200px;
+  min-width: 120px;
+  position: relative;
+  user-select: none;
+}
+
+.tab:hover {
+  background: #1a1a1a;
+}
+
+.tab.active {
+  background: #0a0a0a;
+  border-color: #3a3a3a;
+  height: 33px;
+  z-index: 10;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #0a0a0a;
+}
+
+.tab-status {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.tab-status.idle {
+  background: #4a4a4a;
+}
+
+.tab-status.processing {
+  background: #4a90e2;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.tab-status.ready {
+  background: #4ade80;
+}
+
+.tab-status.error {
+  background: #ef4444;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.tab-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: #9a9a9a;
+}
+
+.tab.active .tab-title {
+  color: #e0e0e0;
+}
+
+.tab-close {
+  margin-left: 8px;
+  background: none;
+  border: none;
+  color: #6a6a6a;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.tab:hover .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
+}
+
+.tab-add {
+  height: 28px;
+  width: 28px;
+  background: none;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px 6px 0 0;
+  color: #6a6a6a;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-add:hover {
+  background: #1a1a1a;
+  color: #9a9a9a;
+  border-color: #3a3a3a;
+}
