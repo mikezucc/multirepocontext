@@ -11,7 +11,9 @@ const api = {
       'set-api-key',
       'get-directory-tree',
       'scan-repository',
-      'read-file'
+      'read-file',
+      'save-file',
+      'setup-pretooluse-hook'
     ]
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data)
@@ -26,7 +28,9 @@ const api = {
       'api-key',
       'directory-tree',
       'daemon-status',
-      'file-content'
+      'file-content',
+      'file-saved',
+      'hook-status'
     ]
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (event, ...args) => callback(...args))

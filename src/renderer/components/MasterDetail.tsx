@@ -61,6 +61,15 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
                   ? '[◧] Scanning...' 
                   : '[►] Scan Repository'}
               </button>
+              <button 
+                className="scan-btn"
+                onClick={() => window.electronAPI.send('setup-pretooluse-hook', { id: selectedRepo.id })}
+                style={{ marginTop: '8px' }}
+              >
+                {selectedRepo.hooks?.pretooluse?.enabled 
+                  ? '[✓] Hook Enabled' 
+                  : '[⚙] Setup Hook'}
+              </button>
             </div>
           ) : (
             <div className="empty-state">

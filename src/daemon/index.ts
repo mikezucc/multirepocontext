@@ -66,6 +66,9 @@ class MDgentDaemon {
       case 'get-directory-tree':
         await this.getDirectoryTree(message.data.id)
         break
+      case 'setup-hook':
+        await this.setupPretoolusehook(message.data)
+        break
     }
   }
 
@@ -531,6 +534,54 @@ Format the response as markdown suitable for a README file.`
     })
     
     console.log('[DAEMON] Directory tree sent for:', repo.path)
+  }
+
+  private async setupPretoolusehook(data: { repositoryId: string, hookType: string, repository: Repository }) {
+    const { repositoryId, hookType, repository } = data
+    console.log('[DAEMON] Setting up pretooluse hook for repository:', repository.path)
+    
+    try {
+      // Create .mdgent directory if it doesn't exist
+      const mdgentDir = path.join(repository.path, '.mdgent')
+      const hooksDir = path.join(mdgentDir, 'hooks')
+      
+      await fs.mkdir(mdgentDir, { recursive: true })
+      await fs.mkdir(hooksDir, { recursive: true })
+      
+      // Create the pretooluse hook script
+      const hookScriptPath = path.join(hooksDir, 'pretooluse.sh')
+      const hookContent = `#!/bin/bash
+# MDgent pretooluse hook
+# This hook is executed before any tool operation
+
+# Append a test string to a file in the repository root
+echo "[$(date)] Pretooluse hook executed" >> "${repository.path}/pretooluse.log"
+
+# Exit successfully
+exit 0
+`
+      
+      // Write the hook script
+      await fs.writeFile(hookScriptPath, hookContent, { mode: 0o755 })
+      
+      console.log('[DAEMON] Pretooluse hook created at:', hookScriptPath)
+      
+      // Send success status back
+      this.sendMessage('hook-status', {
+        repositoryId,
+        success: true,
+        scriptPath: hookScriptPath,
+        message: 'Pretooluse hook created successfully'
+      })
+      
+    } catch (error) {
+      console.error('[DAEMON] Error setting up pretooluse hook:', error)
+      this.sendMessage('hook-status', {
+        repositoryId,
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create hook'
+      })
+    }
   }
 }
 

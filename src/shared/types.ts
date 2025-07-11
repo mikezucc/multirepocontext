@@ -6,6 +6,12 @@ export interface Repository {
   lastUpdated?: Date
   documentCount?: number
   error?: string
+  hooks?: {
+    pretooluse?: {
+      enabled: boolean
+      scriptPath?: string
+    }
+  }
 }
 
 export interface Documentation {

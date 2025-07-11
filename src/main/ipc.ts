@@ -119,6 +119,38 @@ export class IpcHandler {
         })
       }
     })
+
+    ipcMain.on('setup-pretooluse-hook', (event, data) => {
+      console.log('IPC: setup-pretooluse-hook request received for:', data)
+      const { id } = data
+      const repository = this.repositories.get(id)
+      
+      if (!repository) {
+        console.error('IPC: Repository not found:', id)
+        event.reply('hook-status', { 
+          repositoryId: id, 
+          success: false, 
+          error: 'Repository not found' 
+        })
+        return
+      }
+
+      // Update repository with hook configuration
+      repository.hooks = {
+        pretooluse: {
+          enabled: true,
+          scriptPath: path.join(repository.path, '.mdgent', 'hooks', 'pretooluse.sh')
+        }
+      }
+      this.repositories.set(id, repository)
+      
+      // Send to daemon to create the hook script
+      this.sendToDaemon('setup-hook', { 
+        repositoryId: id, 
+        hookType: 'pretooluse',
+        repository 
+      })
+    })
   }
 
   private startDaemon() {
@@ -222,6 +254,21 @@ export class IpcHandler {
       
       case 'directory-tree':
         this.sendToRenderer('directory-tree', message.data)
+        break
+      
+      case 'hook-status':
+        this.sendToRenderer('hook-status', message.data)
+        // Update repository with hook status
+        const hookRepo = this.repositories.get(message.data.repositoryId)
+        if (hookRepo && message.data.success) {
+          hookRepo.hooks = {
+            pretooluse: {
+              enabled: true,
+              scriptPath: message.data.scriptPath
+            }
+          }
+          this.sendToRenderer('repository-status', Array.from(this.repositories.values()))
+        }
         break
     }
   }
