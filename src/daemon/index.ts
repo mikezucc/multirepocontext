@@ -601,18 +601,48 @@ Format the response as markdown suitable for a README file.`
         .replace(/{{REPOSITORY_ID}}/g, repositoryId)
         .replace(/{{REPOSITORY_PATH}}/g, repository.path)
       
-      // Write MCP configuration
+      // Write MCP configuration to .mdgent/mcp directory for reference
       const mcpConfigPath = path.join(mcpDir, 'mcp-config.json')
       await fs.writeFile(mcpConfigPath, configContent)
+      
+      // Also create .mcp.json at repository root for Claude Code auto-detection
+      const rootMcpConfig = {
+        mcpServers: {
+          "mdgent-rag": {
+            command: "node",
+            args: [mcpServerPath],
+            env: {
+              MDGENT_SERVER_PORT: (serverPort || 3000).toString(),
+              MDGENT_REPOSITORY_ID: repositoryId,
+              MDGENT_REPOSITORY_PATH: repository.path
+            },
+            description: "MDgent RAG server for enhanced context retrieval"
+          }
+        }
+      }
+      
+      const rootMcpPath = path.join(repository.path, '.mcp.json')
+      await fs.writeFile(rootMcpPath, JSON.stringify(rootMcpConfig, null, 2))
       
       // Create README for MCP setup
       const readmeContent = `# MDgent MCP Server Setup
 
 This directory contains the MCP (Model Context Protocol) server configuration for MDgent.
 
-## Installation
+## Automatic Setup
 
-### Claude Desktop Integration
+### Claude Code (Recommended)
+
+Claude Code will automatically detect and use the MCP server configuration when you run it in this repository:
+
+1. A \`.mcp.json\` file has been created at the repository root
+2. Simply run \`claude\` in this directory or any subdirectory
+3. Claude Code will automatically load the MDgent RAG server
+4. You'll be prompted to approve the server on first use
+
+### Claude Desktop (Manual Setup)
+
+If you prefer to use Claude Desktop, you can manually add the configuration:
 
 1. Open Claude Desktop settings
 2. Go to the "Developer" section
@@ -625,13 +655,14 @@ ${configContent}
 
 5. Restart Claude Desktop
 
-### Claude Code Integration
+## Claude Code Integration
 
-MDgent has automatically configured this repository for Claude Code:
+MDgent has automatically configured this repository for optimal Claude Code usage:
 
 1. **CLAUDE.md** - Created at the repository root with project-specific configuration
 2. **.claude/settings.json** - Contains Claude Code settings and context rules
-3. **MCP Server** - Provides enhanced search capabilities through the \`search_context\` tool
+3. **.mcp.json** - Enables automatic MCP server loading in Claude Code
+4. **MCP Server** - Provides enhanced search capabilities through the \`search_context\` tool
 
 ## Usage
 
@@ -655,9 +686,10 @@ When you open this repository in Claude Code, it will automatically:
 
 ### MCP Server Files
 - \`mdgent-mcp-server.js\` - The MCP server implementation
-- \`mcp-config.json\` - The configuration to add to Claude Desktop
+- \`mcp-config.json\` - The configuration for manual Claude Desktop setup
 
 ### Claude Code Files
+- \`../../.mcp.json\` - Auto-detected MCP configuration for Claude Code
 - \`../../CLAUDE.md\` - Claude Code configuration for this repository
 - \`../../.claude/settings.json\` - Additional Claude Code settings
 
@@ -682,7 +714,7 @@ With MDgent's Claude integration, you get:
         "tools": {
           "search_context": {
             "enabled": true,
-            "description": "Use MDgent's vector database to search for relevant code context",
+            "description": "Before every response no matter what, use this tool to search the MDgent vector database for relevant code context.",
             "mcp_tool": "mdgent-rag"
           }
         },
@@ -723,6 +755,7 @@ With MDgent's Claude integration, you get:
       
       console.log('[DAEMON] MCP server setup at:', mcpServerPath)
       console.log('[DAEMON] MCP config created at:', mcpConfigPath)
+      console.log('[DAEMON] Root .mcp.json created at:', rootMcpPath)
       console.log('[DAEMON] CLAUDE.md created at:', claudeMdPath)
       console.log('[DAEMON] Claude settings created at:', claudeSettingsPath)
       
@@ -732,9 +765,10 @@ With MDgent's Claude integration, you get:
         success: true,
         serverPath: mcpServerPath,
         configPath: mcpConfigPath,
+        rootMcpPath,
         claudeMdPath,
         claudeSettingsPath,
-        message: 'MCP server and Claude Code environment configured successfully. See .mdgent/mcp/README.md for setup instructions.'
+        message: 'MCP server and Claude Code environment configured successfully. Claude Code will auto-detect the .mcp.json configuration.'
       })
       
     } catch (error) {
@@ -771,7 +805,8 @@ This repository is enhanced with MDgent's AI-powered documentation and search ca
 
 - **Vector Search**: Use the \`search_context\` tool to find relevant code context
 - **Auto-generated Documentation**: Look for \`.mdgent.md\` files for AI-generated code documentation
-- **MCP Server**: A Model Context Protocol server is configured for enhanced Claude Desktop integration
+- **MCP Server**: Automatically loaded via \`.mcp.json\` when you run Claude Code in this directory
+- **Claude Desktop**: Can also be manually configured using the settings in \`.mdgent/mcp/\`
 
 ## Project Structure
 
@@ -837,8 +872,9 @@ MDgent settings for this repository:
 - MCP Enabled: true
 
 For additional configuration, see:
+- \`.mcp.json\` - MCP server configuration (auto-detected by Claude Code)
 - \`.claude/settings.json\` - Claude Code specific settings
-- \`.mdgent/mcp/mcp-config.json\` - MCP server configuration
+- \`.mdgent/mcp/mcp-config.json\` - MCP server configuration for manual setup
 `
   }
 
