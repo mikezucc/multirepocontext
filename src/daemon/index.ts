@@ -572,6 +572,10 @@ Format the response as markdown suitable for a README file.`
       await fs.mkdir(mdgentDir, { recursive: true })
       await fs.mkdir(mcpDir, { recursive: true })
       
+      // Also create .claude directory for Claude Code configuration
+      const claudeDir = path.join(repository.path, '.claude')
+      await fs.mkdir(claudeDir, { recursive: true })
+      
       // Determine if we're in development mode
       const isDev = process.env.NODE_ENV === 'development'
       
@@ -608,6 +612,8 @@ This directory contains the MCP (Model Context Protocol) server configuration fo
 
 ## Installation
 
+### Claude Desktop Integration
+
 1. Open Claude Desktop settings
 2. Go to the "Developer" section
 3. Click "Edit Config" 
@@ -619,25 +625,106 @@ ${configContent}
 
 5. Restart Claude Desktop
 
+### Claude Code Integration
+
+MDgent has automatically configured this repository for Claude Code:
+
+1. **CLAUDE.md** - Created at the repository root with project-specific configuration
+2. **.claude/settings.json** - Contains Claude Code settings and context rules
+3. **MCP Server** - Provides enhanced search capabilities through the \`search_context\` tool
+
 ## Usage
 
-Once configured, you can use the \`search_context\` tool in Claude Desktop to search for relevant context in your codebase.
+### In Claude Desktop
+Once configured, you can use the \`search_context\` tool to search for relevant context in your codebase.
 
-Example:
+### In Claude Code
+When you open this repository in Claude Code, it will automatically:
+- Load the CLAUDE.md configuration
+- Apply context inclusion/exclusion rules from .claude/settings.json
+- Enable the MDgent search capabilities
+
+### Search Examples
 - "search_context: authentication flow"
 - "search_context: database schema"
 - "search_context: API endpoints"
+- "search_context: error handling"
+- "search_context: configuration"
 
 ## Files
 
+### MCP Server Files
 - \`mdgent-mcp-server.js\` - The MCP server implementation
 - \`mcp-config.json\` - The configuration to add to Claude Desktop
+
+### Claude Code Files
+- \`../../CLAUDE.md\` - Claude Code configuration for this repository
+- \`../../.claude/settings.json\` - Additional Claude Code settings
+
+## Benefits
+
+With MDgent's Claude integration, you get:
+1. **Semantic Search**: Find code by meaning, not just text matching
+2. **AI-Generated Documentation**: Access .mdgent.md files for comprehensive code analysis
+3. **Context-Aware Assistance**: Claude understands your project structure and dependencies
+4. **Efficient Navigation**: Quickly locate relevant code sections
 `
       
       await fs.writeFile(path.join(mcpDir, 'README.md'), readmeContent)
       
+      // Create CLAUDE.md for Claude Code environment
+      const claudeMdContent = await this.generateClaudeMdContent(repository)
+      const claudeMdPath = path.join(repository.path, 'CLAUDE.md')
+      await fs.writeFile(claudeMdPath, claudeMdContent)
+      
+      // Create .claude/settings.json for additional Claude Code configuration
+      const claudeSettings = {
+        "tools": {
+          "search_context": {
+            "enabled": true,
+            "description": "Use MDgent's vector database to search for relevant code context",
+            "mcp_tool": "mdgent-rag"
+          }
+        },
+        "context": {
+          "include_patterns": [
+            "**/*.ts",
+            "**/*.tsx",
+            "**/*.js",
+            "**/*.jsx",
+            "**/*.py",
+            "**/*.java",
+            "**/*.go",
+            "**/*.rs",
+            "**/*.cpp",
+            "**/*.c",
+            "**/*.md",
+            "**/*.mdx"
+          ],
+          "exclude_patterns": [
+            "**/node_modules/**",
+            "**/dist/**",
+            "**/build/**",
+            "**/.git/**",
+            "**/coverage/**",
+            "**/*.min.js",
+            "**/*.mdgent.md"
+          ]
+        },
+        "mdgent": {
+          "server_port": serverPort || 3000,
+          "repository_id": repositoryId,
+          "mcp_enabled": true
+        }
+      }
+      
+      const claudeSettingsPath = path.join(claudeDir, 'settings.json')
+      await fs.writeFile(claudeSettingsPath, JSON.stringify(claudeSettings, null, 2))
+      
       console.log('[DAEMON] MCP server setup at:', mcpServerPath)
       console.log('[DAEMON] MCP config created at:', mcpConfigPath)
+      console.log('[DAEMON] CLAUDE.md created at:', claudeMdPath)
+      console.log('[DAEMON] Claude settings created at:', claudeSettingsPath)
       
       // Send success status back
       this.sendMessage('mcp-status', {
@@ -645,7 +732,9 @@ Example:
         success: true,
         serverPath: mcpServerPath,
         configPath: mcpConfigPath,
-        message: 'MCP server configured successfully. See .mdgent/mcp/README.md for setup instructions.'
+        claudeMdPath,
+        claudeSettingsPath,
+        message: 'MCP server and Claude Code environment configured successfully. See .mdgent/mcp/README.md for setup instructions.'
       })
       
     } catch (error) {
@@ -655,6 +744,194 @@ Example:
         success: false,
         error: error instanceof Error ? error.message : 'Failed to setup MCP server'
       })
+    }
+  }
+
+  private async generateClaudeMdContent(repository: Repository): Promise<string> {
+    const repoName = path.basename(repository.path)
+    const gitignore = this.gitignores.get(repository.path)
+    
+    // Analyze repository structure
+    const projectInfo = await this.analyzeProjectStructure(repository.path)
+    
+    return `# Claude Code Configuration for ${repoName}
+
+This file configures Claude Code for optimal interaction with this repository.
+
+## Project Overview
+
+**Repository**: ${repoName}
+**Path**: ${repository.path}
+**Status**: ${repository.status}
+**Last Updated**: ${new Date().toISOString()}
+
+## MDgent Integration
+
+This repository is enhanced with MDgent's AI-powered documentation and search capabilities:
+
+- **Vector Search**: Use the \`search_context\` tool to find relevant code context
+- **Auto-generated Documentation**: Look for \`.mdgent.md\` files for AI-generated code documentation
+- **MCP Server**: A Model Context Protocol server is configured for enhanced Claude Desktop integration
+
+## Project Structure
+
+${projectInfo.structure}
+
+## Key Technologies
+
+${projectInfo.technologies.map(tech => `- ${tech}`).join('\n')}
+
+## Development Commands
+
+${projectInfo.scripts}
+
+## Search Examples
+
+When using Claude Code in this repository, you can use these search patterns:
+
+\`\`\`
+search_context: authentication flow
+search_context: database models
+search_context: API endpoints
+search_context: error handling
+search_context: configuration setup
+\`\`\`
+
+## Context Guidelines
+
+### Include in Context
+- Source code files (${projectInfo.sourceExtensions.join(', ')})
+- Documentation files (*.md, *.mdx)
+- Configuration files (package.json, tsconfig.json, etc.)
+- Test files for understanding expected behavior
+
+### Exclude from Context
+- Node modules and dependencies
+- Build output and compiled files
+- Generated documentation (*.mdgent.md)
+- Large data files and binaries
+
+## MDgent Features
+
+### Available Tools
+1. **search_context**: Search the MDgent vector database for relevant code context
+   - Powered by AI-generated embeddings
+   - Returns semantically similar code snippets
+   - Includes file paths and relevance scores
+
+### Documentation Access
+- Check \`.mdgent.md\` files in each directory for AI-generated documentation
+- These files contain detailed analysis of the code structure and functionality
+
+## Best Practices
+
+1. **Use search_context for exploration**: When you need to understand a feature or find related code
+2. **Reference .mdgent.md files**: For quick understanding of module functionality
+3. **Respect .gitignore**: Files ignored by git are also excluded from MDgent analysis
+
+## Configuration
+
+MDgent settings for this repository:
+- Server Port: Check .mdgent/mcp/mcp-config.json
+- Repository ID: ${repository.id}
+- MCP Enabled: true
+
+For additional configuration, see:
+- \`.claude/settings.json\` - Claude Code specific settings
+- \`.mdgent/mcp/mcp-config.json\` - MCP server configuration
+`
+  }
+
+  private async analyzeProjectStructure(repoPath: string): Promise<{
+    structure: string,
+    technologies: string[],
+    scripts: string,
+    sourceExtensions: string[]
+  }> {
+    const technologies: Set<string> = new Set()
+    const sourceExtensions: Set<string> = new Set()
+    let scripts = ''
+    let structure = ''
+    
+    try {
+      // Check for package.json
+      try {
+        const packageJsonPath = path.join(repoPath, 'package.json')
+        const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'))
+        
+        // Detect technologies from dependencies
+        const deps = { ...packageJson.dependencies, ...packageJson.devDependencies }
+        if (deps.react) technologies.add('React')
+        if (deps.vue) technologies.add('Vue')
+        if (deps.angular) technologies.add('Angular')
+        if (deps.typescript) technologies.add('TypeScript')
+        if (deps.express) technologies.add('Express')
+        if (deps.next) technologies.add('Next.js')
+        if (deps.electron) technologies.add('Electron')
+        if (deps['@anthropic-ai/sdk']) technologies.add('Anthropic SDK')
+        
+        // Extract scripts
+        if (packageJson.scripts) {
+          const commonScripts = ['dev', 'start', 'build', 'test', 'lint']
+          const availableScripts = commonScripts.filter(s => packageJson.scripts[s])
+          if (availableScripts.length > 0) {
+            scripts = '```bash\n' + availableScripts.map(s => `npm run ${s}`).join('\n') + '\n```'
+          }
+        }
+        
+        sourceExtensions.add('.js', '.jsx', '.ts', '.tsx')
+      } catch (e) {
+        // No package.json
+      }
+      
+      // Check for other project files
+      const files = await fs.readdir(repoPath)
+      
+      if (files.includes('requirements.txt') || files.includes('setup.py')) {
+        technologies.add('Python')
+        sourceExtensions.add('.py')
+      }
+      if (files.includes('go.mod')) {
+        technologies.add('Go')
+        sourceExtensions.add('.go')
+      }
+      if (files.includes('Cargo.toml')) {
+        technologies.add('Rust')
+        sourceExtensions.add('.rs')
+      }
+      if (files.includes('pom.xml') || files.includes('build.gradle')) {
+        technologies.add('Java')
+        sourceExtensions.add('.java')
+      }
+      
+      // Generate simple structure
+      const importantDirs = ['src', 'lib', 'components', 'pages', 'api', 'tests', 'docs']
+      const existingDirs = []
+      
+      for (const dir of importantDirs) {
+        try {
+          const stats = await fs.stat(path.join(repoPath, dir))
+          if (stats.isDirectory()) existingDirs.push(dir)
+        } catch (e) {
+          // Directory doesn't exist
+        }
+      }
+      
+      if (existingDirs.length > 0) {
+        structure = '```\n' + existingDirs.map(d => `├── ${d}/`).join('\n') + '\n```'
+      } else {
+        structure = 'Standard project structure'
+      }
+      
+    } catch (error) {
+      console.error('[DAEMON] Error analyzing project structure:', error)
+    }
+    
+    return {
+      structure: structure || 'Project structure analysis unavailable',
+      technologies: Array.from(technologies).length > 0 ? Array.from(technologies) : ['JavaScript/TypeScript'],
+      scripts: scripts || 'No npm scripts found',
+      sourceExtensions: Array.from(sourceExtensions).length > 0 ? Array.from(sourceExtensions) : ['.js', '.ts']
     }
   }
 
