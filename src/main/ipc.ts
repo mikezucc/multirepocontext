@@ -87,11 +87,14 @@ export class IpcHandler {
     })
 
     ipcMain.on('read-file', async (event, data) => {
+      console.log('IPC: read-file request received for:', data)
       const { path } = data
       try {
         const content = fs.readFileSync(path, 'utf-8')
+        console.log('IPC: Successfully read file, content length:', content.length)
         event.reply('file-content', { path, content, error: null })
       } catch (error) {
+        console.error('IPC: Error reading file:', error)
         event.reply('file-content', { 
           path, 
           content: null, 

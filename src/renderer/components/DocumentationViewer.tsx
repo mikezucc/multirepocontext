@@ -141,7 +141,7 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
           />
         </div>
         <div className="content-panel">
-          {selectedFile && selectedFile.endsWith('.md') ? (
+          {selectedFile && (selectedFile.endsWith('.md') || selectedFile.endsWith('.mdgent')) ? (
             <MarkdownPreview filePath={selectedFile} />
           ) : (
             <div className="idle-state">
@@ -154,12 +154,12 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
               >
                 Start Analysis
               </button>
-              {selectedFile && !selectedFile.endsWith('.md') && (
+              {selectedFile && !selectedFile.endsWith('.md') && !selectedFile.endsWith('.mdgent') && (
                 <div className="selected-file">
                   <div className="file-notice">
                     Selected: {selectedFile}
                     <br />
-                    <span className="file-hint">Select a .md file to preview</span>
+                    <span className="file-hint">Select a .md or .mdgent file to preview</span>
                   </div>
                 </div>
               )}
@@ -179,7 +179,7 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
         />
       </div>
       <div className="content-panel">
-        {selectedFile && selectedFile.endsWith('.md') ? (
+        {selectedFile && (selectedFile.endsWith('.md') || selectedFile.endsWith('.mdgent')) ? (
           <MarkdownPreview filePath={selectedFile} />
         ) : html ? (
           <div 
@@ -191,12 +191,12 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
             <div className="no-content-message">
               No documentation generated yet
             </div>
-            {selectedFile && !selectedFile.endsWith('.md') && (
+            {selectedFile && !selectedFile.endsWith('.md') && !selectedFile.endsWith('.mdgent') && (
               <div className="selected-file">
                 <div className="file-notice">
                   Selected: {selectedFile}
                   <br />
-                  <span className="file-hint">Select a .md file to preview</span>
+                  <span className="file-hint">Select a .md or .mdgent file to preview</span>
                 </div>
               </div>
             )}

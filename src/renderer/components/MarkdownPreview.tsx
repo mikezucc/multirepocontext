@@ -13,29 +13,55 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log('MarkdownPreview: Loading file:', filePath)
     setLoading(true)
     setError(null)
+    setContent('') // Reset content when file changes
+    setHtml('') // Reset HTML too
+
+    // Create a timeout to handle the case where no response is received
+    const timeoutId = setTimeout(() => {
+      console.log('MarkdownPreview: Timeout reached for file:', filePath)
+      setLoading(false)
+      setError('File reading timed out. The file may not be accessible.')
+    }, 5000)
 
     const handleFileContent = (data: { path: string; content: string | null; error: string | null }) => {
+      console.log('MarkdownPreview: Received file-content event:', data.path, 'matches:', data.path === filePath)
       if (data.path === filePath) {
+        clearTimeout(timeoutId)
         setLoading(false)
         if (data.error) {
+          console.error('MarkdownPreview: Error loading file:', data.error)
           setError(data.error)
-        } else if (data.content) {
+        } else if (data.content !== null && data.content !== undefined) {
+          console.log('MarkdownPreview: Content received, length:', data.content.length)
           setContent(data.content)
+        } else {
+          console.log('MarkdownPreview: No content received')
+          setError('File is empty or could not be read')
         }
       }
     }
 
     window.electronAPI.on('file-content', handleFileContent)
-    window.electronAPI.send('read-file', { path: filePath })
+    
+    // Small delay to ensure the listener is set up before sending the request
+    const requestId = setTimeout(() => {
+      console.log('MarkdownPreview: Sending read-file request for:', filePath)
+      window.electronAPI.send('read-file', { path: filePath })
+    }, 50)
 
     return () => {
+      console.log('MarkdownPreview: Cleaning up listener for:', filePath)
+      clearTimeout(timeoutId)
+      clearTimeout(requestId)
       window.electronAPI.removeListener('file-content', handleFileContent)
     }
   }, [filePath])
 
   useEffect(() => {
+    console.log('MarkdownPreview: Content changed, length:', content.length)
     if (content) {
       // Configure marked
       marked.use({
