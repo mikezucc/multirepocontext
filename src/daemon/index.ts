@@ -482,7 +482,7 @@ Format the response as markdown suitable for a README file.`
           
           const node: TreeNode = {
             name: entry.name,
-            path: relativePath,
+            path: fullPath,  // Use absolute path instead of relative
             type: entry.isDirectory() ? 'directory' : 'file',
             isMdgent: entry.name.endsWith('.mdgent.md')
           }
