@@ -26,6 +26,11 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
   const [html, setHtml] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentMatch, setCurrentMatch] = useState(-1)
+  const [totalMatches, setTotalMatches] = useState(0)
+  const searchInputRef = React.useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     console.log('MarkdownPreview: Loading file:', filePath)
@@ -122,6 +127,9 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
         // Apply syntax highlighting after a small delay to ensure DOM is updated
         setTimeout(() => {
           Prism.highlightAll()
+          if (searchQuery) {
+            highlightSearchResults()
+          }
         }, 0)
       } catch (err) {
         console.error('Markdown parsing error:', err)
@@ -129,6 +137,110 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
       }
     }
   }, [content])
+
+  useEffect(() => {
+    if (searchQuery && html) {
+      highlightSearchResults()
+    } else if (!searchQuery && html) {
+      removeHighlights()
+    }
+  }, [searchQuery, html])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+      e.preventDefault()
+      setIsSearchOpen(true)
+      setTimeout(() => searchInputRef.current?.focus(), 0)
+    } else if (e.key === 'Escape' && isSearchOpen) {
+      setIsSearchOpen(false)
+      setSearchQuery('')
+      removeHighlights()
+    }
+  }
+
+  const highlightSearchResults = () => {
+    const contentElement = document.querySelector('.markdown-rendered')
+    if (!contentElement || !searchQuery) return
+
+    removeHighlights()
+    
+    const searchRegex = new RegExp(searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+    let matchCount = 0
+    let matches: Range[] = []
+
+    const walkTextNodes = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || ''
+        const regex = new RegExp(searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+        let match
+        
+        while ((match = regex.exec(text)) !== null) {
+          const range = document.createRange()
+          range.setStart(node, match.index)
+          range.setEnd(node, match.index + match[0].length)
+          matches.push(range)
+          matchCount++
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') {
+        for (const child of node.childNodes) {
+          walkTextNodes(child)
+        }
+      }
+    }
+
+    walkTextNodes(contentElement)
+    setTotalMatches(matchCount)
+
+    // Highlight all matches
+    matches.forEach((range, index) => {
+      const span = document.createElement('span')
+      span.className = index === currentMatch ? 'search-highlight search-highlight-current' : 'search-highlight'
+      span.dataset.matchIndex = String(index)
+      try {
+        range.surroundContents(span)
+      } catch (e) {
+        // Handle cases where the range spans multiple elements
+        const contents = range.extractContents()
+        span.appendChild(contents)
+        range.insertNode(span)
+      }
+    })
+
+    // Scroll to current match
+    if (currentMatch >= 0 && currentMatch < matches.length) {
+      const currentHighlight = document.querySelector('.search-highlight-current')
+      if (currentHighlight) {
+        currentHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
+  }
+
+  const removeHighlights = () => {
+    const highlights = document.querySelectorAll('.search-highlight')
+    highlights.forEach(highlight => {
+      const parent = highlight.parentNode
+      if (parent) {
+        while (highlight.firstChild) {
+          parent.insertBefore(highlight.firstChild, highlight)
+        }
+        parent.removeChild(highlight)
+      }
+    })
+  }
+
+  const findNext = () => {
+    if (totalMatches === 0) return
+    const nextMatch = (currentMatch + 1) % totalMatches
+    setCurrentMatch(nextMatch)
+    highlightSearchResults()
+  }
+
+  const findPrevious = () => {
+    if (totalMatches === 0) return
+    const prevMatch = currentMatch === 0 ? totalMatches - 1 : currentMatch - 1
+    setCurrentMatch(prevMatch)
+    highlightSearchResults()
+  }
 
   if (loading) {
     return (
@@ -152,7 +264,64 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
   const fileName = filePath.split('/').pop() || 'Untitled'
 
   return (
-    <div className="markdown-preview">
+    <div className="markdown-preview" onKeyDown={handleKeyDown} tabIndex={0}>
+      {isSearchOpen && (
+        <div className="preview-search">
+          <input
+            ref={searchInputRef}
+            type="text"
+            className="preview-search-input"
+            placeholder="Find..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setCurrentMatch(0)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                if (e.shiftKey) {
+                  findPrevious()
+                } else {
+                  findNext()
+                }
+              }
+            }}
+          />
+          <div className="preview-search-actions">
+            <button
+              className="preview-search-btn"
+              onClick={findPrevious}
+              disabled={totalMatches === 0}
+              title="Previous match (Shift+Enter)"
+            >
+              ↑
+            </button>
+            <button
+              className="preview-search-btn"
+              onClick={findNext}
+              disabled={totalMatches === 0}
+              title="Next match (Enter)"
+            >
+              ↓
+            </button>
+            <span className="preview-match-count">
+              {totalMatches > 0 ? `${currentMatch + 1}/${totalMatches}` : 'No results'}
+            </span>
+            <button
+              className="preview-search-close"
+              onClick={() => {
+                setIsSearchOpen(false)
+                setSearchQuery('')
+                removeHighlights()
+              }}
+              title="Close (Esc)"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
       <div className="preview-content">
         <div 
           className="markdown-rendered"

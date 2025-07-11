@@ -19,7 +19,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ repositories }) => {
 
   useEffect(() => {
     const handleAnalysisUpdate = (data: any) => {
-      setCurrentActivity(`Regenerating embeddings: ${data.currentFile} (${Math.round(data.progress)}%)`)
+      setCurrentActivity(`(${Math.round(data.progress)}%) Regenerating embeddings: ${data.currentFile}`)
       addLog(`Processing file ${data.processedFiles + 1}/${data.totalFiles}: ${data.currentFile}`, 'info')
     }
 

@@ -5,33 +5,23 @@
   position: relative;
 }
 
-.master-detail::before {
-  content: '';
-  position: absolute;
-  left: 300px;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--border-color);
-  z-index: 10;
-}
-
 .master-pane {
-  width: 300px;
   background-color: var(--bg-primary);
-  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
+  height: 100%;
+  width: 100%;
 }
 
 .detail-pane {
-  flex: 1;
   background-color: var(--bg-primary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: 100%;
+  width: 100%;
 }
 
 .pane-header {
@@ -211,12 +201,3 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 800px) {
-  .master-pane {
-    width: 250px;
-  }
-  
-  .master-detail::before {
-    left: 250px;
-  }
-}

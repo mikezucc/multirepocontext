@@ -23,6 +23,9 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [searchResults, setSearchResults] = useState<Set<string>>(new Set())
+  const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {
     // Reset state
@@ -107,16 +110,72 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
     }
   }
 
-  const renderNode = (node: TreeNode, level = 0, parentPath = ''): JSX.Element => {
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    setIsSearching(query.length > 0)
+    
+    if (query.length === 0) {
+      setSearchResults(new Set())
+      return
+    }
+    
+    const results = new Set<string>()
+    const searchLower = query.toLowerCase()
+    
+    const searchNodes = (nodes: TreeNode[], parentPath = '') => {
+      for (const node of nodes) {
+        const nodePath = parentPath ? `${parentPath}/${node.name}` : node.name
+        
+        if (node.name.toLowerCase().includes(searchLower)) {
+          results.add(nodePath)
+          
+          // Expand parent directories
+          let pathParts = nodePath.split('/')
+          pathParts.pop()
+          let path = ''
+          for (const part of pathParts) {
+            path = path ? `${path}/${part}` : part
+            expandedPaths.add(path)
+          }
+        }
+        
+        if (node.children) {
+          searchNodes(node.children, nodePath)
+        }
+      }
+    }
+    
+    searchNodes(tree)
+    setSearchResults(results)
+    setExpandedPaths(new Set(expandedPaths))
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+      e.preventDefault()
+      const searchInput = document.querySelector('.tree-search-input') as HTMLInputElement
+      if (searchInput) {
+        searchInput.focus()
+      }
+    }
+  }
+
+  const renderNode = (node: TreeNode, level = 0, parentPath = ''): JSX.Element | null => {
     const nodePath = parentPath ? `${parentPath}/${node.name}` : node.name
     const isExpanded = expandedPaths.has(nodePath)
     const isSelected = selectedPath === nodePath
+    const isSearchMatch = searchResults.has(nodePath)
+    
+    // If searching, only show matching nodes and their children
+    if (isSearching && node.type === 'file' && !isSearchMatch) {
+      return null
+    }
 
     if (node.type === 'directory') {
       return (
         <div key={nodePath} className="tree-node">
           <div
-            className={`tree-item directory ${isExpanded ? 'expanded' : ''}`}
+            className={`tree-item directory ${isExpanded ? 'expanded' : ''} ${isSearching && !hasMatchingChildren(node, nodePath) ? 'search-dim' : ''}`}
             style={{ paddingLeft: `${level * 16}px` }}
             onClick={() => toggleExpand(nodePath)}
           >
@@ -131,7 +190,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
           </div>
           {isExpanded && node.children && (
             <div className="tree-children" style={{ '--indent-level': level + 1 } as React.CSSProperties}>
-              {node.children.map(child => renderNode(child, level + 1, nodePath))}
+              {node.children.map(child => renderNode(child, level + 1, nodePath)).filter(Boolean)}
             </div>
           )}
         </div>
@@ -141,7 +200,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
     return (
       <div key={nodePath} className="tree-node">
         <div
-          className={`tree-item file ${node.isMdgent ? 'mdgent-file' : ''} ${isSelected ? 'selected' : ''}`}
+          className={`tree-item file ${node.isMdgent ? 'mdgent-file' : ''} ${isSelected ? 'selected' : ''} ${isSearchMatch ? 'search-match' : ''}`}
           style={{ paddingLeft: `${level * 16}px` }}
           onClick={() => handleFileClick(node.path)}
         >
@@ -157,8 +216,38 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
     )
   }
 
+  const hasMatchingChildren = (node: TreeNode, parentPath: string): boolean => {
+    if (!node.children) return false
+    
+    for (const child of node.children) {
+      const childPath = parentPath ? `${parentPath}/${child.name}` : child.name
+      if (searchResults.has(childPath)) return true
+      if (child.children && hasMatchingChildren(child, childPath)) return true
+    }
+    
+    return false
+  }
+
   return (
-    <div className="directory-tree">
+    <div className="directory-tree" onKeyDown={handleKeyDown}>
+      <div className="tree-search">
+        <input
+          type="text"
+          className="tree-search-input"
+          placeholder="Search files... (⌘F)"
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
+        {searchQuery && (
+          <button
+            className="tree-search-clear"
+            onClick={() => handleSearch('')}
+            aria-label="Clear search"
+          >
+            ✕
+          </button>
+        )}
+      </div>
       <div className="tree-content">
         {loading ? (
           <div className="tree-empty">Loading directory structure...</div>
@@ -167,7 +256,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
         ) : tree.length === 0 ? (
           <div className="tree-empty">No files found in repository</div>
         ) : (
-          tree.map(node => renderNode(node))
+          tree.map(node => renderNode(node)).filter(Boolean)
         )}
       </div>
     </div>

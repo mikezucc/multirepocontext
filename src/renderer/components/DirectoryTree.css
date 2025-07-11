@@ -7,6 +7,49 @@
   padding-left: 8px;
 }
 
+/* Search functionality */
+.tree-search {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+
+.tree-search-input {
+  width: 100%;
+  padding: 6px 28px 6px 8px;
+  font-size: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.tree-search-input:focus {
+  border-color: var(--text-secondary);
+}
+
+.tree-search-clear {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.tree-search-clear:hover {
+  opacity: 1;
+}
+
 .tree-header {
   padding: 16px;
   border-bottom: 1px solid var(--border-color);
@@ -150,4 +193,21 @@
   background: var(--border-color);
   opacity: 0.3;
   z-index: 0;
+}
+
+/* Search highlighting */
+.tree-item.search-match {
+  background-color: rgba(255, 235, 0, 0.2);
+}
+
+.tree-item.search-match:hover {
+  background-color: rgba(255, 235, 0, 0.3);
+}
+
+.tree-item.search-match.selected {
+  background-color: var(--accent-beige);
+}
+
+.tree-item.search-dim {
+  opacity: 0.5;
 }

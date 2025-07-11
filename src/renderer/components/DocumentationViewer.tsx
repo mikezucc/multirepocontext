@@ -5,6 +5,8 @@ import DirectoryTree from './DirectoryTree'
 import MarkdownPreview from './MarkdownPreview'
 import MarkdownEditor from './MarkdownEditor'
 import CodePreview from './CodePreview'
+import { ResizablePane } from '../../components/ResizablePane'
+import '../../components/ResizablePane.css'
 import './DocumentationViewer.css'
 
 interface DocumentationViewerProps {
@@ -194,59 +196,85 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
 
   // Show directory tree for idle repositories
   if (repository.status === 'idle') {
-    return (
-      <div className="documentation-viewer with-tree">
-        <div className="tree-panel">
-          <DirectoryTree 
-            repositoryId={repository.id}
-            onFileSelect={setSelectedFile}
-          />
-        </div>
-        <div className="content-panel">
-          {selectedFile ? (
-            renderFileContent()
-          ) : (
-            <div className="idle-state">
-              <div className="idle-icon">⚡</div>
-              <h3>Repository Ready for Analysis</h3>
-              <p>This repository hasn't been analyzed yet. Click the button below to scan all files and generate documentation.</p>
-              <button 
-                className="scan-button"
-                onClick={() => window.electronAPI.send('scan-repository', { id: repository.id })}
-              >
-                Start Analysis
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="documentation-viewer with-tree">
+    const treePanel = (
       <div className="tree-panel">
         <DirectoryTree 
           repositoryId={repository.id}
           onFileSelect={setSelectedFile}
         />
       </div>
+    );
+    
+    const contentPanel = (
       <div className="content-panel">
         {selectedFile ? (
           renderFileContent()
-        ) : html ? (
-          <div 
-            className="markdown-content"
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
         ) : (
-          <div className="no-content">
-            <div className="no-content-message">
-              No documentation generated yet
-            </div>
+          <div className="idle-state">
+            <div className="idle-icon">⚡</div>
+            <h3>Repository Ready for Analysis</h3>
+            <p>This repository hasn't been analyzed yet. Click the button below to scan all files and generate documentation.</p>
+            <button 
+              className="scan-button"
+              onClick={() => window.electronAPI.send('scan-repository', { id: repository.id })}
+            >
+              Start Analysis
+            </button>
           </div>
         )}
       </div>
+    );
+    
+    return (
+      <div className="documentation-viewer with-tree">
+        <ResizablePane
+          leftPane={treePanel}
+          rightPane={contentPanel}
+          initialLeftWidth={300}
+          minLeftWidth={200}
+          maxLeftWidth={500}
+        />
+      </div>
+    )
+  }
+
+  const treePanel = (
+    <div className="tree-panel">
+      <DirectoryTree 
+        repositoryId={repository.id}
+        onFileSelect={setSelectedFile}
+      />
+    </div>
+  );
+  
+  const contentPanel = (
+    <div className="content-panel">
+      {selectedFile ? (
+        renderFileContent()
+      ) : html ? (
+        <div 
+          className="markdown-content"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      ) : (
+        <div className="no-content">
+          <div className="no-content-message">
+            No documentation generated yet
+          </div>
+        </div>
+      )}
+    </div>
+  );
+  
+  return (
+    <div className="documentation-viewer with-tree">
+      <ResizablePane
+        leftPane={treePanel}
+        rightPane={contentPanel}
+        initialLeftWidth={300}
+        minLeftWidth={200}
+        maxLeftWidth={500}
+      />
     </div>
   )
 }

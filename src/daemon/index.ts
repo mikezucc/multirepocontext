@@ -271,8 +271,7 @@ out
 
   private async scanRepository(repoPath: string): Promise<string[]> {
     const files: string[] = []
-    // Include markdown files for vector indexing
-    const extensions = ['.ts', '.tsx', '.js', '.jsx', '.py', '.java', '.go', '.rs', '.cpp', '.c', '.md', '.mdx']
+    // Only scan for .mdgent.md files for embeddings
     const gitignore = this.gitignores.get(repoPath)
     const maxFiles = 1000 // Limit total files to prevent memory issues
     
@@ -303,12 +302,8 @@ out
               await scan(fullPath, depth + 1)
             }
           } else if (entry.isFile()) {
-            const ext = path.extname(entry.name)
-            // Skip MDgent-specific files and check custom ignore patterns
-            if (extensions.includes(ext) && 
-                !entry.name.endsWith('.mdgent.md') && 
-                entry.name !== '.mcp.json' &&
-                entry.name !== 'CLAUDE.md' &&
+            // Only include .mdgent.md files for embeddings
+            if (entry.name.endsWith('.mdgent.md') && 
                 !ignorePatterns.some(pattern => this.matchesPattern(relativePath, pattern))) {
               files.push(fullPath)
             }
@@ -340,16 +335,18 @@ out
       
       const content = await fs.readFile(filePath, 'utf-8')
       
-      // Send file for indexing
-      this.sendMessage('index-file', {
-        repositoryId: repoId,
-        filePath: filePath,
-        content: content
-      })
+      // Only send .mdgent.md files for indexing (embeddings)
+      if (filePath.endsWith('.mdgent.md')) {
+        this.sendMessage('index-file', {
+          repositoryId: repoId,
+          filePath: filePath,
+          content: content
+        })
+      }
       
       // Generate documentation if Anthropic client is available
-      if (this.anthropic) {
-        const prompt = `Analyze this code file and generate comprehensive documentation for it.
+      if (this.anthropic && !filePath.endsWith('.mdgent.md')) {
+        const prompt = `You are a technical Product Manager who is compiling the tribal knowledge of the codebase. Analyze this code file and generate comprehensive documentation that serves to both describe the product and design considerations, as well as the detaield technical specifications.
 
 File: ${relativePath}
 
@@ -450,22 +447,30 @@ Format the response as markdown suitable for a README file.`
 
   private onFileAdded(repoId: string, filePath: string) {
     console.log('[DAEMON] File added:', filePath)
-    this.queueAnalysis(repoId, filePath)
+    // Only process .mdgent.md files for embeddings
+    if (filePath.endsWith('.mdgent.md')) {
+      this.queueAnalysis(repoId, filePath)
+    }
   }
 
   private onFileChanged(repoId: string, filePath: string) {
     console.log('[DAEMON] File changed:', filePath)
-    this.queueAnalysis(repoId, filePath)
+    // Only process .mdgent.md files for embeddings
+    if (filePath.endsWith('.mdgent.md')) {
+      this.queueAnalysis(repoId, filePath)
+    }
   }
 
   private async onFileRemoved(repoId: string, filePath: string) {
     console.log('[DAEMON] File removed:', filePath)
     
-    // Send message to remove from index
-    this.sendMessage('remove-indexed-file', {
-      repositoryId: repoId,
-      filePath: filePath
-    })
+    // Only remove from index if it's a .mdgent.md file
+    if (filePath.endsWith('.mdgent.md')) {
+      this.sendMessage('remove-indexed-file', {
+        repositoryId: repoId,
+        filePath: filePath
+      })
+    }
   }
 
   private queueAnalysis(repoId: string, filePath: string) {

@@ -1,0 +1,40 @@
+.resizable-pane-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.resizable-pane-left {
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.resizable-pane-right {
+  flex: 1;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.resizable-pane-divider {
+  width: 4px;
+  cursor: col-resize;
+  background-color: var(--border-color);
+  position: relative;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+
+.resizable-pane-divider:hover {
+  background-color: var(--primary-color);
+}
+
+.resizable-pane-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -2px;
+  right: -2px;
+}
