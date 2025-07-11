@@ -126,37 +126,49 @@ export class IpcHandler {
       }
     })
 
-    ipcMain.on('setup-pretooluse-hook', (event, data) => {
-      console.log('IPC: setup-pretooluse-hook request received for:', data)
+    ipcMain.on('setup-mcp-server', (event, data) => {
+      console.log('IPC: setup-mcp-server request received for:', data)
       const { id } = data
       const repository = this.repositories.get(id)
       
       if (!repository) {
         console.error('IPC: Repository not found:', id)
-        event.reply('hook-status', { 
-          repositoryId: id, 
-          success: false, 
-          error: 'Repository not found' 
-        })
         return
       }
-
-      // Update repository with hook configuration
-      repository.hooks = {
-        pretooluse: {
-          enabled: true,
-          scriptPath: path.join(repository.path, '.mdgent', 'hooks', 'pretooluse.js')
-        }
-      }
-      this.repositories.set(id, repository)
       
-      // Send to daemon to create the hook script
-      this.sendToDaemon('setup-hook', { 
+      // Send to daemon to setup MCP server
+      this.sendToDaemon('setup-mcp', { 
         repositoryId: id, 
-        hookType: 'pretooluse',
         repository,
         serverPort: this.serverPort
       })
+    })
+
+    ipcMain.on('regenerate-embeddings', async (event, data) => {
+      console.log('IPC: regenerate-embeddings request received for:', data)
+      const { id } = data
+      const repository = this.repositories.get(id)
+      
+      if (!repository) {
+        console.error('IPC: Repository not found:', id)
+        return
+      }
+      
+      // Send to daemon to regenerate embeddings
+      this.sendToDaemon('regenerate-embeddings', { 
+        repositoryId: id, 
+        repository
+      })
+    })
+
+    ipcMain.on('get-vector-stats', async (event, data) => {
+      const { id } = data
+      try {
+        const stats = await this.getVectorStats(id)
+        event.reply('vector-stats', { repositoryId: id, stats })
+      } catch (error) {
+        console.error('IPC: Error getting vector stats:', error)
+      }
     })
   }
 
@@ -261,22 +273,16 @@ export class IpcHandler {
       
       case 'directory-tree':
         this.sendToRenderer('directory-tree', message.data)
+        // Also fetch vector stats when loading directory
+        this.getVectorStats(message.data.repositoryId).then(stats => {
+          const repo = this.repositories.get(message.data.repositoryId)
+          if (repo) {
+            repo.vectorStats = stats
+            this.sendToRenderer('repository-status', Array.from(this.repositories.values()))
+          }
+        })
         break
       
-      case 'hook-status':
-        this.sendToRenderer('hook-status', message.data)
-        // Update repository with hook status
-        const hookRepo = this.repositories.get(message.data.repositoryId)
-        if (hookRepo && message.data.success) {
-          hookRepo.hooks = {
-            pretooluse: {
-              enabled: true,
-              scriptPath: message.data.scriptPath
-            }
-          }
-          this.sendToRenderer('repository-status', Array.from(this.repositories.values()))
-        }
-        break
       
       case 'index-file':
         // Index file in vector database
@@ -291,6 +297,14 @@ export class IpcHandler {
       case 'remove-indexed-repository':
         // Remove repository from index
         documentIndexer.removeRepository(message.data.repositoryId)
+        break
+      
+      case 'mcp-status':
+        this.sendToRenderer('mcp-status', message.data)
+        break
+      
+      case 'embeddings-status':
+        this.sendToRenderer('embeddings-status', message.data)
         break
     }
   }
@@ -341,5 +355,10 @@ export class IpcHandler {
     if (this.daemon && !this.daemon.killed) {
       this.daemon.kill()
     }
+  }
+
+  private async getVectorStats(repositoryId: string) {
+    const { documentIndexer } = await import('./vectordb/indexer')
+    return await documentIndexer.getIndexStats(repositoryId)
   }
 }

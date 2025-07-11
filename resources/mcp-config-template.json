@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "mdgent-rag": {
+      "command": "node",
+      "args": ["{{MCP_SERVER_PATH}}"],
+      "env": {
+        "MDGENT_SERVER_PORT": "{{SERVER_PORT}}",
+        "MDGENT_REPOSITORY_ID": "{{REPOSITORY_ID}}",
+        "MDGENT_REPOSITORY_PATH": "{{REPOSITORY_PATH}}"
+      },
+      "description": "MDgent RAG server for enhanced context retrieval"
+    }
+  }
+}

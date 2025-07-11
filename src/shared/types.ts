@@ -6,11 +6,10 @@ export interface Repository {
   lastUpdated?: Date
   documentCount?: number
   error?: string
-  hooks?: {
-    pretooluse?: {
-      enabled: boolean
-      scriptPath?: string
-    }
+  vectorStats?: {
+    documentCount: number
+    chunkCount: number
+    lastIndexed: Date | null
   }
 }
 

@@ -3,7 +3,7 @@ import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { IpcHandler } from './ipc'
 import { vectorDB } from './vectordb/database'
-import { pretoolUseServer } from './server'
+import { searchServer } from './server'
 
 let mainWindow: BrowserWindow | null = null
 let ipcHandler: IpcHandler | null = null
@@ -49,10 +49,10 @@ app.whenReady().then(async () => {
     console.log('[Main] Initializing vector database...')
     await vectorDB.initialize()
     
-    // Start pretooluse server
-    console.log('[Main] Starting pretooluse server...')
-    serverPort = await pretoolUseServer.start()
-    console.log('[Main] Pretooluse server started on port:', serverPort)
+    // Start search server
+    console.log('[Main] Starting search server...')
+    serverPort = await searchServer.start()
+    console.log('[Main] Search server started on port:', serverPort)
   } catch (error) {
     console.error('[Main] Failed to initialize services:', error)
   }
@@ -79,7 +79,7 @@ app.on('window-all-closed', async () => {
   }
   
   // Stop services
-  await pretoolUseServer.stop()
+  await searchServer.stop()
   await vectorDB.close()
   
   if (process.platform !== 'darwin') {
@@ -93,6 +93,6 @@ app.on('before-quit', async () => {
   }
   
   // Stop services
-  await pretoolUseServer.stop()
+  await searchServer.stop()
   await vectorDB.close()
 })

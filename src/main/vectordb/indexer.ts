@@ -48,6 +48,33 @@ export class DocumentIndexer {
     }
   }
 
+  async getIndexStats(repositoryId: string): Promise<{
+    documentCount: number
+    chunkCount: number
+    lastIndexed: Date | null
+  }> {
+    const db = vectorDB.getDatabase()
+    
+    const docStats = db.prepare(`
+      SELECT COUNT(*) as count, MAX(updated_at) as lastUpdated
+      FROM documents
+      WHERE repository_id = ?
+    `).get(repositoryId) as { count: number; lastUpdated: string }
+
+    const chunkStats = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM chunks c
+      JOIN documents d ON c.document_id = d.id
+      WHERE d.repository_id = ?
+    `).get(repositoryId) as { count: number }
+
+    return {
+      documentCount: docStats.count,
+      chunkCount: chunkStats.count,
+      lastIndexed: docStats.lastUpdated ? new Date(docStats.lastUpdated) : null
+    }
+  }
+
   async removeFile(repositoryId: string, filePath: string): Promise<void> {
     try {
       await vectorDB.deleteDocument(repositoryId, filePath)

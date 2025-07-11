@@ -4,7 +4,7 @@ import { hybridSearch } from './vectordb/search'
 import { embeddingGenerator } from './embeddings/embeddings'
 import { vectorDB } from './vectordb/database'
 
-export class PretoolUseServer {
+export class SearchServer {
   private app: express.Application
   private server: Server | null = null
   private port: number = 0 // Will be assigned dynamically
@@ -35,11 +35,11 @@ export class PretoolUseServer {
   private setupRoutes(): void {
     // Health check endpoint
     this.app.get('/health', (req, res) => {
-      res.json({ status: 'ok', service: 'mdgent-pretooluse' })
+      res.json({ status: 'ok', service: 'mdgent-search' })
     })
 
-    // Main pretooluse endpoint
-    this.app.post('/pretooluse', async (req, res) => {
+    // Main search endpoint
+    this.app.post('/search', async (req, res) => {
       try {
         const { prompt, repositoryId, options = {} } = req.body
 
@@ -49,7 +49,7 @@ export class PretoolUseServer {
           })
         }
 
-        console.log('[PretoolUseServer] Processing request for repository:', repositoryId)
+        console.log('[SearchServer] Processing request for repository:', repositoryId)
 
         // Generate embedding for the prompt
         const queryEmbedding = await embeddingGenerator.generateEmbedding(prompt)
@@ -105,7 +105,7 @@ export class PretoolUseServer {
 
         res.json(response)
       } catch (error) {
-        console.error('[PretoolUseServer] Error processing request:', error)
+        console.error('[SearchServer] Error processing request:', error)
         res.status(500).json({
           success: false,
           error: error instanceof Error ? error.message : 'Internal server error'
@@ -131,7 +131,7 @@ export class PretoolUseServer {
           lastUpdated: result.lastUpdated
         })
       } catch (error) {
-        console.error('[PretoolUseServer] Error checking repository status:', error)
+        console.error('[SearchServer] Error checking repository status:', error)
         res.status(500).json({ error: 'Failed to check repository status' })
       }
     })
@@ -145,7 +145,7 @@ export class PretoolUseServer {
           const address = this.server!.address()
           if (typeof address === 'object' && address !== null) {
             this.port = address.port
-            console.log(`[PretoolUseServer] Server started on port ${this.port}`)
+            console.log(`[SearchServer] Server started on port ${this.port}`)
             resolve(this.port)
           } else {
             reject(new Error('Failed to get server address'))
@@ -161,7 +161,7 @@ export class PretoolUseServer {
     return new Promise((resolve) => {
       if (this.server) {
         this.server.close(() => {
-          console.log('[PretoolUseServer] Server stopped')
+          console.log('[SearchServer] Server stopped')
           this.server = null
           this.port = 0
           resolve()
@@ -177,4 +177,4 @@ export class PretoolUseServer {
   }
 }
 
-export const pretoolUseServer = new PretoolUseServer()
+export const searchServer = new SearchServer()

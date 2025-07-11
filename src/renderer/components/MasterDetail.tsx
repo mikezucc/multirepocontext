@@ -63,13 +63,31 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
               </button>
               <button 
                 className="scan-btn"
-                onClick={() => window.electronAPI.send('setup-pretooluse-hook', { id: selectedRepo.id })}
+                onClick={() => window.electronAPI.send('setup-mcp-server', { id: selectedRepo.id })}
                 style={{ marginTop: '8px' }}
+                title="Setup MCP server configuration for enhanced context retrieval"
               >
-                {selectedRepo.hooks?.pretooluse?.enabled 
-                  ? '[✓] Hook Enabled' 
-                  : '[⚙] Setup Hook'}
+                [⚙] Setup MCP Server
               </button>
+              <button 
+                className="scan-btn"
+                onClick={() => window.electronAPI.send('regenerate-embeddings', { id: selectedRepo.id })}
+                style={{ marginTop: '8px' }}
+                title="Regenerate embeddings for all .mdgent.md files"
+              >
+                [↻] Regenerate Embeddings
+              </button>
+              
+              {selectedRepo.vectorStats && (
+                <div className="vector-stats" style={{ marginTop: '16px', fontSize: '0.85em', opacity: 0.8 }}>
+                  <div>Vector Database Stats:</div>
+                  <div>• Documents: {selectedRepo.vectorStats.documentCount}</div>
+                  <div>• Chunks: {selectedRepo.vectorStats.chunkCount}</div>
+                  {selectedRepo.vectorStats.lastIndexed && (
+                    <div>• Last indexed: {new Date(selectedRepo.vectorStats.lastIndexed).toLocaleString()}</div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="empty-state">

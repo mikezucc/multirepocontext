@@ -13,7 +13,9 @@ const api = {
       'scan-repository',
       'read-file',
       'save-file',
-      'setup-pretooluse-hook'
+      'setup-mcp-server',
+      'regenerate-embeddings',
+      'get-vector-stats'
     ]
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data)
@@ -30,7 +32,9 @@ const api = {
       'daemon-status',
       'file-content',
       'file-saved',
-      'hook-status'
+      'mcp-status',
+      'embeddings-status',
+      'vector-stats'
     ]
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (event, ...args) => callback(...args))

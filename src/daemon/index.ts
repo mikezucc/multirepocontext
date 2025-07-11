@@ -66,8 +66,11 @@ class MDgentDaemon {
       case 'get-directory-tree':
         await this.getDirectoryTree(message.data.id)
         break
-      case 'setup-hook':
-        await this.setupPretoolusehook(message.data)
+      case 'setup-mcp':
+        await this.setupMCPServer(message.data)
+        break
+      case 'regenerate-embeddings':
+        await this.regenerateEmbeddings(message.data)
         break
     }
   }
@@ -556,51 +559,191 @@ Format the response as markdown suitable for a README file.`
     console.log('[DAEMON] Directory tree sent for:', repo.path)
   }
 
-  private async setupPretoolusehook(data: { repositoryId: string, hookType: string, repository: Repository, serverPort?: number }) {
-    const { repositoryId, hookType, repository, serverPort } = data
-    console.log('[DAEMON] Setting up pretooluse hook for repository:', repository.path)
+
+  private async setupMCPServer(data: { repositoryId: string, repository: Repository, serverPort?: number }) {
+    const { repositoryId, repository, serverPort } = data
+    console.log('[DAEMON] Setting up MCP server for repository:', repository.path)
     
     try {
       // Create .mdgent directory if it doesn't exist
       const mdgentDir = path.join(repository.path, '.mdgent')
-      const hooksDir = path.join(mdgentDir, 'hooks')
+      const mcpDir = path.join(mdgentDir, 'mcp')
       
       await fs.mkdir(mdgentDir, { recursive: true })
-      await fs.mkdir(hooksDir, { recursive: true })
+      await fs.mkdir(mcpDir, { recursive: true })
       
-      // Read the hook template
+      // Determine if we're in development mode
       const isDev = process.env.NODE_ENV === 'development'
-      const hookTemplatePath = isDev 
-        ? path.join(__dirname, '../../resources/pretooluse-hook.js')
-        : path.join(process.resourcesPath, 'resources/pretooluse-hook.js')
-      let hookContent = await fs.readFile(hookTemplatePath, 'utf-8')
+      
+      // Copy MCP server script
+      const mcpServerTemplatePath = isDev 
+        ? path.join(__dirname, '../../resources/mcp-server.js')
+        : path.join(process.resourcesPath, 'resources/mcp-server.js')
+      const mcpServerContent = await fs.readFile(mcpServerTemplatePath, 'utf-8')
+      
+      const mcpServerPath = path.join(mcpDir, 'mdgent-mcp-server.js')
+      await fs.writeFile(mcpServerPath, mcpServerContent, { mode: 0o755 })
+      
+      // Read MCP config template
+      const configTemplatePath = isDev
+        ? path.join(__dirname, '../../resources/mcp-config-template.json')
+        : path.join(process.resourcesPath, 'resources/mcp-config-template.json')
+      let configContent = await fs.readFile(configTemplatePath, 'utf-8')
       
       // Replace placeholders
-      hookContent = hookContent
-        .replace('{{SERVER_PORT}}', serverPort?.toString() || '3000')
-        .replace('{{REPOSITORY_ID}}', repositoryId)
-        .replace('{{REPOSITORY_PATH}}', repository.path)
+      configContent = configContent
+        .replace(/{{MCP_SERVER_PATH}}/g, mcpServerPath)
+        .replace(/{{SERVER_PORT}}/g, serverPort?.toString() || '3000')
+        .replace(/{{REPOSITORY_ID}}/g, repositoryId)
+        .replace(/{{REPOSITORY_PATH}}/g, repository.path)
       
-      // Write the hook script
-      const hookScriptPath = path.join(hooksDir, 'pretooluse.js')
-      await fs.writeFile(hookScriptPath, hookContent, { mode: 0o755 })
+      // Write MCP configuration
+      const mcpConfigPath = path.join(mcpDir, 'mcp-config.json')
+      await fs.writeFile(mcpConfigPath, configContent)
       
-      console.log('[DAEMON] Pretooluse hook created at:', hookScriptPath)
+      // Create README for MCP setup
+      const readmeContent = `# MDgent MCP Server Setup
+
+This directory contains the MCP (Model Context Protocol) server configuration for MDgent.
+
+## Installation
+
+1. Open Claude Desktop settings
+2. Go to the "Developer" section
+3. Click "Edit Config" 
+4. Add the following configuration to your settings:
+
+\`\`\`json
+${configContent}
+\`\`\`
+
+5. Restart Claude Desktop
+
+## Usage
+
+Once configured, you can use the \`search_context\` tool in Claude Desktop to search for relevant context in your codebase.
+
+Example:
+- "search_context: authentication flow"
+- "search_context: database schema"
+- "search_context: API endpoints"
+
+## Files
+
+- \`mdgent-mcp-server.js\` - The MCP server implementation
+- \`mcp-config.json\` - The configuration to add to Claude Desktop
+`
+      
+      await fs.writeFile(path.join(mcpDir, 'README.md'), readmeContent)
+      
+      console.log('[DAEMON] MCP server setup at:', mcpServerPath)
+      console.log('[DAEMON] MCP config created at:', mcpConfigPath)
       
       // Send success status back
-      this.sendMessage('hook-status', {
+      this.sendMessage('mcp-status', {
         repositoryId,
         success: true,
-        scriptPath: hookScriptPath,
-        message: 'Pretooluse hook created successfully'
+        serverPath: mcpServerPath,
+        configPath: mcpConfigPath,
+        message: 'MCP server configured successfully. See .mdgent/mcp/README.md for setup instructions.'
       })
       
     } catch (error) {
-      console.error('[DAEMON] Error setting up pretooluse hook:', error)
-      this.sendMessage('hook-status', {
+      console.error('[DAEMON] Error setting up MCP server:', error)
+      this.sendMessage('mcp-status', {
         repositoryId,
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to create hook'
+        error: error instanceof Error ? error.message : 'Failed to setup MCP server'
+      })
+    }
+  }
+
+  private async regenerateEmbeddings(data: { repositoryId: string, repository: Repository }) {
+    const { repositoryId, repository } = data
+    console.log('[DAEMON] Regenerating embeddings for repository:', repository.path)
+    
+    try {
+      // Update status
+      this.updateRepoStatus(repositoryId, 'analyzing')
+      
+      // Find all .mdgent.md files
+      const mdgentFiles: string[] = []
+      
+      const findMdgentFiles = async (dir: string): Promise<void> => {
+        try {
+          const entries = await fs.readdir(dir, { withFileTypes: true })
+          
+          for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name)
+            
+            if (entry.isDirectory()) {
+              // Skip common directories
+              const skipDirs = ['node_modules', '.git', 'dist', 'build', 'out', '.next']
+              if (!skipDirs.includes(entry.name) && !entry.name.startsWith('.')) {
+                await findMdgentFiles(fullPath)
+              }
+            } else if (entry.isFile() && entry.name.endsWith('.mdgent.md')) {
+              mdgentFiles.push(fullPath)
+            }
+          }
+        } catch (error) {
+          console.error('[DAEMON] Error scanning directory:', dir, error)
+        }
+      }
+      
+      await findMdgentFiles(repository.path)
+      
+      console.log(`[DAEMON] Found ${mdgentFiles.length} .mdgent.md files to index`)
+      
+      // Send files for indexing
+      for (let i = 0; i < mdgentFiles.length; i++) {
+        const file = mdgentFiles[i]
+        
+        // Send progress
+        const progress: AnalysisProgress = {
+          repositoryId,
+          currentFile: file,
+          totalFiles: mdgentFiles.length,
+          processedFiles: i,
+          progress: (i / mdgentFiles.length) * 100,
+          tokensUsed: 0,
+          estimatedCost: 0
+        }
+        this.sendMessage('analysis-progress', progress)
+        
+        // Read and send file for indexing
+        try {
+          const content = await fs.readFile(file, 'utf-8')
+          this.sendMessage('index-file', {
+            repositoryId,
+            filePath: file,
+            content
+          })
+        } catch (error) {
+          console.error('[DAEMON] Error reading file:', file, error)
+        }
+      }
+      
+      // Update status
+      this.updateRepoStatus(repositoryId, 'ready')
+      
+      console.log('[DAEMON] Embedding regeneration complete')
+      
+      this.sendMessage('embeddings-status', {
+        repositoryId,
+        success: true,
+        filesProcessed: mdgentFiles.length,
+        message: `Regenerated embeddings for ${mdgentFiles.length} files`
+      })
+      
+    } catch (error) {
+      console.error('[DAEMON] Error regenerating embeddings:', error)
+      this.updateRepoStatus(repositoryId, 'error', error.message)
+      
+      this.sendMessage('embeddings-status', {
+        repositoryId,
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to regenerate embeddings'
       })
     }
   }
