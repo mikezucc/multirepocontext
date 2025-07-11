@@ -88,7 +88,7 @@ function App() {
               transition: 'all 0.2s ease'
             }}
           >
-            [F] Files
+            Files
           </button>
           <button 
             className={`view-btn ${currentView === 'debug' ? 'active' : ''}`}
@@ -106,7 +106,7 @@ function App() {
               transition: 'all 0.2s ease'
             }}
           >
-            [D] Debug
+            Debug
           </button>
         </div>
         <button className="settings-btn" onClick={() => setShowSettings(true)}>

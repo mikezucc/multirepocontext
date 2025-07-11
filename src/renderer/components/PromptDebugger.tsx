@@ -153,11 +153,11 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
   }
 
   return (
-    <div className="prompt-debugger-container">
+    <div className="prompt-debugger prompt-debugger-container">
       {/* Header */}
       <div className="prompt-debugger-header">
         <h2 className="prompt-debugger-title">
-          [◧] Vector Database Debug
+          Vector Database Debug
           {repositoryName && <span style={{ fontWeight: 'normal', color: 'var(--text-secondary)' }}> - {repositoryName}</span>}
         </h2>
       </div>
@@ -194,13 +194,13 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
                 className="prompt-debugger-section-header"
               >
                 <h3 className="prompt-debugger-section-title">
-                  [▣] Vector Database Statistics
+                  Vector Database Statistics
                 </h3>
                 {expandedSections.stats ? '[▼]' : '[▶]'}
               </button>
               
               {expandedSections.stats && (
-                <div style={{ padding: '0 16px 16px' }}>
+                <div style={{ padding: '16px 16px 16px' }}>
                   <div className="prompt-debugger-stats-grid">
                     <div>
                       <span className="prompt-debugger-stat-label">Documents:</span>

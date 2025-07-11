@@ -3,8 +3,8 @@
   --pd-bg-primary: var(--bg-primary, #f5f2eb);
   --pd-bg-secondary: var(--bg-secondary, #ebe7dd);
   --pd-text-primary: var(--text-primary, #4a453a);
-  --pd-text-secondary: var(--text-secondary, #8b8175);
-  --pd-border-color: var(--border-color, #3f3f3f);
+  --pd-text-secondary: var(--text-secondary, #786b5b);
+  --pd-border-color: var(--border-color, #f34040);
 }
 
 .prompt-debugger-container {
@@ -33,7 +33,7 @@
 
 .prompt-debugger-search {
   background-color: var(--pd-bg-secondary);
-  border: 1px solid black;
+  border: 1px solid var(--pd-border-color);
   padding: 12px 16px;
 }
 
