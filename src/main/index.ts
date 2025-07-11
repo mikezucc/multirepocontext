@@ -2,9 +2,12 @@ import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { IpcHandler } from './ipc'
+import { vectorDB } from './vectordb/database'
+import { pretoolUseServer } from './server'
 
 let mainWindow: BrowserWindow | null = null
 let ipcHandler: IpcHandler | null = null
+let serverPort: number = 0
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -38,13 +41,31 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   createWindow()
+  
+  try {
+    // Initialize vector database
+    console.log('[Main] Initializing vector database...')
+    await vectorDB.initialize()
+    
+    // Start pretooluse server
+    console.log('[Main] Starting pretooluse server...')
+    serverPort = await pretoolUseServer.start()
+    console.log('[Main] Pretooluse server started on port:', serverPort)
+  } catch (error) {
+    console.error('[Main] Failed to initialize services:', error)
+  }
   
   // Initialize IPC handler
   ipcHandler = new IpcHandler()
   if (mainWindow) {
     ipcHandler.setMainWindow(mainWindow)
+  }
+  
+  // Pass server port to IPC handler
+  if (ipcHandler) {
+    ipcHandler.setServerPort(serverPort)
   }
 
   app.on('activate', function () {
@@ -52,17 +73,26 @@ app.whenReady().then(() => {
   })
 })
 
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
   if (ipcHandler) {
     ipcHandler.cleanup()
   }
+  
+  // Stop services
+  await pretoolUseServer.stop()
+  await vectorDB.close()
+  
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
 
-app.on('before-quit', () => {
+app.on('before-quit', async () => {
   if (ipcHandler) {
     ipcHandler.cleanup()
   }
+  
+  // Stop services
+  await pretoolUseServer.stop()
+  await vectorDB.close()
 })

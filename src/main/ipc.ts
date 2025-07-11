@@ -4,11 +4,13 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { v4 as uuidv4 } from 'uuid'
 import { Repository } from '../shared/types'
+import { documentIndexer } from './vectordb/indexer'
 
 export class IpcHandler {
   private daemon: ChildProcess | null = null
   private repositories: Map<string, Repository> = new Map()
   private mainWindow: Electron.BrowserWindow | null = null
+  private serverPort: number = 0
 
   constructor() {
     this.setupHandlers()
@@ -17,6 +19,10 @@ export class IpcHandler {
 
   setMainWindow(window: Electron.BrowserWindow) {
     this.mainWindow = window
+  }
+
+  setServerPort(port: number) {
+    this.serverPort = port
   }
 
   private setupHandlers() {
@@ -139,7 +145,7 @@ export class IpcHandler {
       repository.hooks = {
         pretooluse: {
           enabled: true,
-          scriptPath: path.join(repository.path, '.mdgent', 'hooks', 'pretooluse.sh')
+          scriptPath: path.join(repository.path, '.mdgent', 'hooks', 'pretooluse.js')
         }
       }
       this.repositories.set(id, repository)
@@ -148,7 +154,8 @@ export class IpcHandler {
       this.sendToDaemon('setup-hook', { 
         repositoryId: id, 
         hookType: 'pretooluse',
-        repository 
+        repository,
+        serverPort: this.serverPort
       })
     })
   }
@@ -270,6 +277,29 @@ export class IpcHandler {
           this.sendToRenderer('repository-status', Array.from(this.repositories.values()))
         }
         break
+      
+      case 'index-file':
+        // Index file in vector database
+        this.indexFile(message.data)
+        break
+      
+      case 'remove-indexed-file':
+        // Remove file from index
+        documentIndexer.removeFile(message.data.repositoryId, message.data.filePath)
+        break
+      
+      case 'remove-indexed-repository':
+        // Remove repository from index
+        documentIndexer.removeRepository(message.data.repositoryId)
+        break
+    }
+  }
+
+  private async indexFile(data: { repositoryId: string; filePath: string; content: string }) {
+    try {
+      await documentIndexer.indexFile(data.repositoryId, data.filePath, data.content)
+    } catch (error) {
+      console.error('[IPC] Error indexing file:', error)
     }
   }
 

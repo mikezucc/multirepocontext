@@ -186,6 +186,12 @@ out
         this.watchers.delete(key)
       }
     }
+    
+    // Send message to remove from index
+    this.sendMessage('remove-indexed-repository', {
+      repositoryId: repoId
+    })
+    
     this.repositories.delete(repoId)
     
     // Clean up gitignore cache
@@ -256,7 +262,8 @@ out
 
   private async scanRepository(repoPath: string): Promise<string[]> {
     const files: string[] = []
-    const extensions = ['.ts', '.tsx', '.js', '.jsx', '.py', '.java', '.go', '.rs', '.cpp', '.c']
+    // Include markdown files for vector indexing
+    const extensions = ['.ts', '.tsx', '.js', '.jsx', '.py', '.java', '.go', '.rs', '.cpp', '.c', '.md', '.mdx']
     const gitignore = this.gitignores.get(repoPath)
     const maxFiles = 1000 // Limit total files to prevent memory issues
     
@@ -301,16 +308,20 @@ out
   }
 
   private async analyzeFile(repoId: string, filePath: string) {
-    if (!this.anthropic) {
-      console.log('[DAEMON] Skipping file analysis - no Anthropic client')
-      return
-    }
-
     try {
       const content = await fs.readFile(filePath, 'utf-8')
       const relativePath = path.relative(this.repositories.get(repoId)!.path, filePath)
       
-      const prompt = `Analyze this code file and generate comprehensive documentation for it.
+      // Send file for indexing
+      this.sendMessage('index-file', {
+        repositoryId: repoId,
+        filePath: filePath,
+        content: content
+      })
+      
+      // Generate documentation if Anthropic client is available
+      if (this.anthropic) {
+        const prompt = `Analyze this code file and generate comprehensive documentation for it.
 
 File: ${relativePath}
 
@@ -327,21 +338,24 @@ Please provide:
 
 Format the response as markdown suitable for a README file.`
 
-      const response = await this.anthropic.messages.create({
-        model: 'claude-3-opus-20240229',
-        max_tokens: 2000,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
+        const response = await this.anthropic.messages.create({
+          model: 'claude-3-opus-20240229',
+          max_tokens: 2000,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }]
+        })
 
-      const documentation = response.content[0].type === 'text' 
-        ? response.content[0].text 
-        : ''
+        const documentation = response.content[0].type === 'text' 
+          ? response.content[0].text 
+          : ''
 
-      await this.saveDocumentation(repoId, filePath, documentation)
-      console.log('[DAEMON] Successfully analyzed:', relativePath)
+        await this.saveDocumentation(repoId, filePath, documentation)
+        console.log('[DAEMON] Successfully analyzed:', relativePath)
+      } else {
+        console.log('[DAEMON] File sent for indexing:', filePath)
+      }
       
     } catch (error) {
       console.error(`[DAEMON] Error analyzing file ${filePath}:`, error)
@@ -409,8 +423,14 @@ Format the response as markdown suitable for a README file.`
     this.queueAnalysis(repoId, filePath)
   }
 
-  private onFileRemoved(repoId: string, filePath: string) {
-    // Handle file removal if needed
+  private async onFileRemoved(repoId: string, filePath: string) {
+    console.log('[DAEMON] File removed:', filePath)
+    
+    // Send message to remove from index
+    this.sendMessage('remove-indexed-file', {
+      repositoryId: repoId,
+      filePath: filePath
+    })
   }
 
   private queueAnalysis(repoId: string, filePath: string) {
@@ -536,8 +556,8 @@ Format the response as markdown suitable for a README file.`
     console.log('[DAEMON] Directory tree sent for:', repo.path)
   }
 
-  private async setupPretoolusehook(data: { repositoryId: string, hookType: string, repository: Repository }) {
-    const { repositoryId, hookType, repository } = data
+  private async setupPretoolusehook(data: { repositoryId: string, hookType: string, repository: Repository, serverPort?: number }) {
+    const { repositoryId, hookType, repository, serverPort } = data
     console.log('[DAEMON] Setting up pretooluse hook for repository:', repository.path)
     
     try {
@@ -548,20 +568,18 @@ Format the response as markdown suitable for a README file.`
       await fs.mkdir(mdgentDir, { recursive: true })
       await fs.mkdir(hooksDir, { recursive: true })
       
-      // Create the pretooluse hook script
-      const hookScriptPath = path.join(hooksDir, 'pretooluse.sh')
-      const hookContent = `#!/bin/bash
-# MDgent pretooluse hook
-# This hook is executed before any tool operation
-
-# Append a test string to a file in the repository root
-echo "[$(date)] Pretooluse hook executed" >> "${repository.path}/pretooluse.log"
-
-# Exit successfully
-exit 0
-`
+      // Read the hook template
+      const hookTemplatePath = path.join(__dirname, '../../resources/pretooluse-hook.js')
+      let hookContent = await fs.readFile(hookTemplatePath, 'utf-8')
+      
+      // Replace placeholders
+      hookContent = hookContent
+        .replace('{{SERVER_PORT}}', serverPort?.toString() || '3000')
+        .replace('{{REPOSITORY_ID}}', repositoryId)
+        .replace('{{REPOSITORY_PATH}}', repository.path)
       
       // Write the hook script
+      const hookScriptPath = path.join(hooksDir, 'pretooluse.js')
       await fs.writeFile(hookScriptPath, hookContent, { mode: 0o755 })
       
       console.log('[DAEMON] Pretooluse hook created at:', hookScriptPath)
