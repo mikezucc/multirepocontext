@@ -1,4 +1,25 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
+import Prism from 'prismjs'
+import '../styles/prism-beige.css'
+// Import common language components
+import 'prismjs/components/prism-typescript'
+import 'prismjs/components/prism-javascript'
+import 'prismjs/components/prism-jsx'
+import 'prismjs/components/prism-tsx'
+import 'prismjs/components/prism-css'
+import 'prismjs/components/prism-scss'
+import 'prismjs/components/prism-json'
+import 'prismjs/components/prism-markdown'
+import 'prismjs/components/prism-python'
+import 'prismjs/components/prism-bash'
+import 'prismjs/components/prism-yaml'
+import 'prismjs/components/prism-sql'
+import 'prismjs/components/prism-go'
+import 'prismjs/components/prism-rust'
+import 'prismjs/components/prism-java'
+import 'prismjs/components/prism-csharp'
+import 'prismjs/components/prism-cpp'
+import 'prismjs/components/prism-c'
 import './CodePreview.css'
 
 interface CodePreviewProps {
@@ -9,6 +30,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ filePath }) => {
   const [content, setContent] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const codeRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -43,13 +65,20 @@ const CodePreview: React.FC<CodePreviewProps> = ({ filePath }) => {
     }
   }, [filePath])
 
+  // Apply syntax highlighting when content changes
+  useEffect(() => {
+    if (codeRef.current && content) {
+      Prism.highlightElement(codeRef.current)
+    }
+  }, [content])
+
   const getLanguageFromExtension = (path: string): string => {
     const ext = path.split('.').pop()?.toLowerCase()
     const languageMap: { [key: string]: string } = {
       'js': 'javascript',
-      'jsx': 'javascript',
+      'jsx': 'jsx',
       'ts': 'typescript',
-      'tsx': 'typescript',
+      'tsx': 'tsx',
       'py': 'python',
       'rb': 'ruby',
       'go': 'go',
@@ -132,7 +161,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ filePath }) => {
             ))}
           </div>
           <pre className="code-content">
-            <code className={`language-${language}`}>
+            <code ref={codeRef} className={`language-${language}`}>
               {content}
             </code>
           </pre>

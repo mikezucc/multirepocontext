@@ -105,7 +105,6 @@
 .line-numbers {
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
-  padding: 16px 0;
   text-align: right;
   user-select: none;
   flex-shrink: 0;
@@ -126,14 +125,84 @@
   font-family: 'Courier Prime', monospace;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--text-primary);
   overflow-x: auto;
+  background: transparent !important;
 }
 
-/* Syntax highlighting placeholders */
-.language-javascript,
-.language-typescript {
-  color: var(--text-primary);
+.code-content code {
+  font-family: 'Courier Prime', monospace;
+  background: transparent !important;
+}
+
+/* Override Prism theme colors to match our beige theme */
+.code-content .token.comment,
+.code-content .token.prolog,
+.code-content .token.doctype,
+.code-content .token.cdata {
+  color: #8b8175;
+  font-style: italic;
+}
+
+.code-content .token.punctuation {
+  color: #4a453a;
+}
+
+.code-content .token.property,
+.code-content .token.tag,
+.code-content .token.boolean,
+.code-content .token.number,
+.code-content .token.constant,
+.code-content .token.symbol,
+.code-content .token.deleted {
+  color: #a0522d;
+}
+
+.code-content .token.selector,
+.code-content .token.attr-name,
+.code-content .token.string,
+.code-content .token.char,
+.code-content .token.builtin,
+.code-content .token.inserted {
+  color: #6b8e23;
+}
+
+.code-content .token.operator,
+.code-content .token.entity,
+.code-content .token.url,
+.code-content .language-css .token.string,
+.code-content .style .token.string {
+  color: #cd853f;
+}
+
+.code-content .token.atrule,
+.code-content .token.attr-value,
+.code-content .token.keyword {
+  color: #8b4513;
+  font-weight: 500;
+}
+
+.code-content .token.function,
+.code-content .token.class-name {
+  color: #4682b4;
+}
+
+.code-content .token.regex,
+.code-content .token.important,
+.code-content .token.variable {
+  color: #b8860b;
+}
+
+.code-content .token.important,
+.code-content .token.bold {
+  font-weight: bold;
+}
+
+.code-content .token.italic {
+  font-style: italic;
+}
+
+.code-content .token.entity {
+  cursor: help;
 }
 
 /* Scrollbar styling */

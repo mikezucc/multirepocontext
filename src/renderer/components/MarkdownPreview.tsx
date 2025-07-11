@@ -1,5 +1,17 @@
 import React, { useEffect, useState } from 'react'
 import { marked } from 'marked'
+import Prism from 'prismjs'
+import '../styles/prism-beige.css'
+// Import common language components for markdown code blocks
+import 'prismjs/components/prism-typescript'
+import 'prismjs/components/prism-javascript'
+import 'prismjs/components/prism-jsx'
+import 'prismjs/components/prism-tsx'
+import 'prismjs/components/prism-css'
+import 'prismjs/components/prism-json'
+import 'prismjs/components/prism-python'
+import 'prismjs/components/prism-bash'
+import 'prismjs/components/prism-yaml'
 import './MarkdownPreview.css'
 
 interface MarkdownPreviewProps {
@@ -81,11 +93,11 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
               return escapeMap[char]
             })
             
-            // Return formatted code block with language class
+            // Return formatted code block with language class for Prism
             if (language) {
               return `<pre class="language-${language}"><code class="language-${language}">${escapedCode}</code></pre>`
             }
-            return `<pre><code>${escapedCode}</code></pre>`
+            return `<pre class="language-plaintext"><code class="language-plaintext">${escapedCode}</code></pre>`
           },
           heading(this: any, { text, depth }: { text: string; depth: number }) {
             const textStr = String(text)
@@ -104,6 +116,10 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
       try {
         const htmlContent = marked.parse(content)
         setHtml(htmlContent as string)
+        // Apply syntax highlighting after a small delay to ensure DOM is updated
+        setTimeout(() => {
+          Prism.highlightAll()
+        }, 0)
       } catch (err) {
         console.error('Markdown parsing error:', err)
         setError('Failed to parse markdown content')
