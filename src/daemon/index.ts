@@ -448,6 +448,8 @@ Format the response as markdown suitable for a README file.`
       type: 'file' | 'directory'
       children?: TreeNode[]
       isMdgent?: boolean
+      modifiedTime?: number // Unix timestamp in milliseconds
+      lastModified?: number // For directories, the latest modified time of its contents
     }
 
     const buildTree = async (dirPath: string, depth = 0): Promise<TreeNode[]> => {
@@ -480,15 +482,28 @@ Format the response as markdown suitable for a README file.`
             continue
           }
           
+          // Get file stats for modification time
+          const stats = await fs.stat(fullPath)
+          
           const node: TreeNode = {
             name: entry.name,
             path: fullPath,  // Use absolute path instead of relative
             type: entry.isDirectory() ? 'directory' : 'file',
-            isMdgent: entry.name.endsWith('.mdgent.md')
+            isMdgent: entry.name.endsWith('.mdgent.md'),
+            modifiedTime: stats.mtime.getTime()
           }
           
           if (entry.isDirectory()) {
             node.children = await buildTree(fullPath, depth + 1)
+            // Calculate the latest modified time from all children
+            if (node.children.length > 0) {
+              const childTimes = node.children.map(child => 
+                child.type === 'directory' ? (child.lastModified || child.modifiedTime || 0) : (child.modifiedTime || 0)
+              )
+              node.lastModified = Math.max(stats.mtime.getTime(), ...childTimes)
+            } else {
+              node.lastModified = stats.mtime.getTime()
+            }
           }
           
           nodes.push(node)

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { formatCompactTime } from '../utils/timeFormat'
 import './DirectoryTree.css'
 
 interface TreeNode {
@@ -7,6 +8,8 @@ interface TreeNode {
   type: 'file' | 'directory'
   children?: TreeNode[]
   isMdgent?: boolean
+  modifiedTime?: number
+  lastModified?: number
 }
 
 interface DirectoryTreeProps {
@@ -122,6 +125,9 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
             {node.children?.some(child => child.isMdgent) && (
               <span className="has-mdgent">●</span>
             )}
+            {(node.lastModified || node.modifiedTime) && (
+              <span className="tree-time">{formatCompactTime(node.lastModified || node.modifiedTime || 0)}</span>
+            )}
           </div>
           {isExpanded && node.children && (
             <div className="tree-children" style={{ '--indent-level': level + 1 } as React.CSSProperties}>
@@ -143,6 +149,9 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
             {node.isMdgent ? '>' : ''}
           </span>
           <span className="tree-name">{node.name}</span>
+          {node.modifiedTime && (
+            <span className="tree-time">{formatCompactTime(node.modifiedTime)}</span>
+          )}
         </div>
       </div>
     )
