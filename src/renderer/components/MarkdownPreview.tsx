@@ -66,11 +66,11 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
       // Configure marked
       marked.use({
         renderer: {
-          code(code: string, infostring: string | undefined) {
-            const lang = (infostring || '').match(/\S*/)?.[0] || ''
+          code(this: any, { text, lang }: { text: string; lang?: string }) {
+            const language = lang || ''
             
             // Escape HTML entities
-            const escapedCode = code.replace(/[&<>'"]/g, (char) => {
+            const escapedCode = text.replace(/[&<>'"]/g, (char) => {
               const escapeMap: {[key: string]: string} = {
                 '&': '&amp;',
                 '<': '&lt;',
@@ -82,16 +82,17 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
             })
             
             // Return formatted code block with language class
-            if (lang) {
-              return `<pre class="language-${lang}"><code class="language-${lang}">${escapedCode}</code></pre>`
+            if (language) {
+              return `<pre class="language-${language}"><code class="language-${language}">${escapedCode}</code></pre>`
             }
             return `<pre><code>${escapedCode}</code></pre>`
           },
-          heading(text: string, level: number) {
-            const anchor = text.toLowerCase().replace(/[^\w]+/g, '-')
-            return `<h${level} id="${anchor}">${text}</h${level}>`
+          heading(this: any, { text, depth }: { text: string; depth: number }) {
+            const textStr = String(text)
+            const anchor = textStr.toLowerCase().replace(/[^\w]+/g, '-')
+            return `<h${depth} id="${anchor}">${text}</h${depth}>`
           },
-          link(href: string, title: string | null, text: string) {
+          link(this: any, { href, title, text }: { href: string; title?: string | null; text: string }) {
             const titleAttr = title ? ` title="${title}"` : ''
             return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`
           }
