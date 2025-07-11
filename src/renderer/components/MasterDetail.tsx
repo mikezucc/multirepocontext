@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import DocumentationViewer from './DocumentationViewer'
 import { Repository } from '@shared/types'
 import './MasterDetail.css'
@@ -17,6 +17,29 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
   onAddRepo
 }) => {
   const [documentation, setDocumentation] = useState<string>('')
+  const [isRegeneratingEmbeddings, setIsRegeneratingEmbeddings] = useState(false)
+
+  useEffect(() => {
+    const handleAnalysisUpdate = (data: any) => {
+      if (selectedRepo && data.repositoryId === selectedRepo.id) {
+        setIsRegeneratingEmbeddings(true)
+      }
+    }
+
+    const handleEmbeddingsStatus = (data: any) => {
+      if (selectedRepo && data.repositoryId === selectedRepo.id) {
+        setIsRegeneratingEmbeddings(false)
+      }
+    }
+
+    window.electronAPI.on('analysis-update', handleAnalysisUpdate)
+    window.electronAPI.on('embeddings-status', handleEmbeddingsStatus)
+
+    return () => {
+      window.electronAPI.removeListener('analysis-update', handleAnalysisUpdate)
+      window.electronAPI.removeListener('embeddings-status', handleEmbeddingsStatus)
+    }
+  }, [selectedRepo])
 
   return (
     <div className="master-detail">
@@ -71,11 +94,17 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
               </button>
               <button 
                 className="scan-btn"
-                onClick={() => window.electronAPI.send('regenerate-embeddings', { id: selectedRepo.id })}
+                onClick={() => {
+                  if (!isRegeneratingEmbeddings) {
+                    window.electronAPI.send('regenerate-embeddings', { id: selectedRepo.id })
+                    setIsRegeneratingEmbeddings(true)
+                  }
+                }}
                 style={{ marginTop: '8px' }}
-                title="Regenerate embeddings for all .mdgent.md files"
+                title={isRegeneratingEmbeddings ? "Regenerating embeddings..." : "Regenerate embeddings for all .mdgent.md files"}
+                disabled={isRegeneratingEmbeddings}
               >
-                [↻] Regenerate Embeddings
+                {isRegeneratingEmbeddings ? '[⟳] Regenerating...' : '[↻] Regenerate Embeddings'}
               </button>
               
               {selectedRepo.vectorStats && (

@@ -76,7 +76,8 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
 
   useEffect(() => {
     // Listen for vector stats
-    const handleVectorStats = (_: any, data: { repositoryId: string, stats: VectorStats | null, error?: string }) => {
+    const handleVectorStats = (data: { repositoryId: string, stats: VectorStats | null, error?: string }) => {
+      console.log('Renderer: Received vector-stats:', data);
       if (data.error) {
         console.error('Vector stats error:', data.error)
         return
@@ -87,7 +88,7 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
     }
 
     // Listen for search results
-    const handleSearchResults = (_: any, data: { repositoryId: string, results: DebugSearchResults, error?: string }) => {
+    const handleSearchResults = (data: { repositoryId: string, results: DebugSearchResults, error?: string }) => {
       setLoading(false)
       if (data.error) {
         console.error('Search error:', data.error)

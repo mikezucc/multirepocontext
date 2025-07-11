@@ -19,8 +19,8 @@ const StatusBar: React.FC<StatusBarProps> = ({ repositories }) => {
 
   useEffect(() => {
     const handleAnalysisUpdate = (data: any) => {
-      setCurrentActivity(`Analyzing: ${data.currentFile} (${Math.round(data.progress)}%)`)
-      addLog(`Analyzing file ${data.processedFiles + 1}/${data.totalFiles}: ${data.currentFile}`, 'info')
+      setCurrentActivity(`Regenerating embeddings: ${data.currentFile} (${Math.round(data.progress)}%)`)
+      addLog(`Processing file ${data.processedFiles + 1}/${data.totalFiles}: ${data.currentFile}`, 'info')
     }
 
     const handleDocumentationReady = (data: any) => {
@@ -48,16 +48,28 @@ const StatusBar: React.FC<StatusBarProps> = ({ repositories }) => {
       }
     }
 
+    const handleEmbeddingsStatus = (data: any) => {
+      if (data.success) {
+        setCurrentActivity('')
+        addLog(data.message || `Successfully regenerated embeddings for ${data.filesProcessed} files`, 'info')
+      } else {
+        setCurrentActivity('')
+        addLog(data.error || 'Failed to regenerate embeddings', 'error')
+      }
+    }
+
     window.electronAPI.on('analysis-update', handleAnalysisUpdate)
     window.electronAPI.on('documentation-ready', handleDocumentationReady)
     window.electronAPI.on('daemon-status', handleDaemonStatus)
     window.electronAPI.on('repository-status', handleRepoStatus)
+    window.electronAPI.on('embeddings-status', handleEmbeddingsStatus)
 
     return () => {
       window.electronAPI.removeListener('analysis-update', handleAnalysisUpdate)
       window.electronAPI.removeListener('documentation-ready', handleDocumentationReady)
       window.electronAPI.removeListener('daemon-status', handleDaemonStatus)
       window.electronAPI.removeListener('repository-status', handleRepoStatus)
+      window.electronAPI.removeListener('embeddings-status', handleEmbeddingsStatus)
     }
   }, [])
 

@@ -2,7 +2,7 @@ import { ipcMain, dialog } from 'electron'
 import { spawn, ChildProcess } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
-import { v4 as uuidv4 } from 'uuid'
+import { createHash } from 'crypto'
 import { Repository } from '../shared/types'
 import { documentIndexer } from './vectordb/indexer'
 
@@ -25,6 +25,18 @@ export class IpcHandler {
     this.serverPort = port
   }
 
+  private generateRepositoryId(repoPath: string): string {
+    // Normalize the path to ensure consistency
+    // Remove trailing slashes and resolve to absolute path
+    const normalizedPath = path.resolve(repoPath).replace(/[/\\]+$/, '')
+    
+    // Create a SHA-256 hash of the normalized path
+    const hash = createHash('sha256')
+    hash.update(normalizedPath)
+    // Return first 32 characters of the hex digest
+    return hash.digest('hex').substring(0, 32)
+  }
+
   private setupHandlers() {
     ipcMain.on('add-repository', async (event, data) => {
       const result = await dialog.showOpenDialog({
@@ -35,9 +47,16 @@ export class IpcHandler {
       if (!result.canceled && result.filePaths.length > 0) {
         const repoPath = result.filePaths[0]
         const repoName = path.basename(repoPath)
+        const repoId = this.generateRepositoryId(repoPath)
+        
+        // Check if this repository already exists
+        if (this.repositories.has(repoId)) {
+          console.log(`Repository already exists with ID: ${repoId}`)
+          return
+        }
         
         const repository: Repository = {
-          id: uuidv4(),
+          id: repoId,
           path: repoPath,
           name: repoName,
           status: 'idle',
@@ -166,6 +185,7 @@ export class IpcHandler {
       try {
         console.log('IPC: get-vector-stats request received for:', id)
         const stats = await this.getVectorStats(id)
+        console.log('IPC: get-vector-stats request responding', stats);
         event.reply('vector-stats', { repositoryId: id, stats })
       } catch (error) {
         console.error('IPC: Error getting vector stats:', error)

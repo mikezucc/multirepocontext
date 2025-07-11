@@ -38,12 +38,14 @@ const api = {
       'vector-stats',
       'debug-search-results'
     ]
+    console.log('Preload: Setting up listener for channel:', channel);
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (event, ...args) => callback(...args))
+      console.log('Preload: Listener set up for channel:', channel);
     }
   },
   removeListener: (channel: string, callback: Function) => {
-    ipcRenderer.removeListener(channel, callback)
+    ipcRenderer.removeListener(channel, (event, ...args) => callback(...args))
   }
 }
 
