@@ -8,7 +8,9 @@ const api = {
       'refresh-repository', 
       'get-repositories',
       'get-api-key',
-      'set-api-key'
+      'set-api-key',
+      'get-directory-tree',
+      'scan-repository'
     ]
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data)
@@ -20,7 +22,9 @@ const api = {
       'repository-removed',
       'analysis-update', 
       'documentation-ready',
-      'api-key'
+      'api-key',
+      'directory-tree',
+      'daemon-status'
     ]
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (event, ...args) => callback(...args))

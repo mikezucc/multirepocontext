@@ -49,13 +49,11 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
     
     // Request directory tree with a small delay to ensure repository is set up
     console.log('DirectoryTree: Requesting tree for repository:', repositoryId)
-    const requestTimeoutId = setTimeout(() => {
-      console.log('SENDSENDSEND!!! DirectoryTree: Requesting tree for repository:', repositoryId)
-      window.electronAPI.send('get-directory-tree', { id: repositoryId })
-    }, 100)
+    console.log('SENDSENDSEND!!! DirectoryTree: Requesting tree for repository:', repositoryId)
+    window.electronAPI.send('get-directory-tree', { id: repositoryId })
 
     return () => {
-      clearTimeout(requestTimeoutId)
+      // clearTimeout(requestTimeoutId)
       clearTimeout(loadingTimeoutId)
       window.electronAPI.removeListener('directory-tree', handleDirectoryTree)
     }
@@ -142,7 +140,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
           onClick={() => handleFileClick(node.path)}
         >
           <span className="file-icon">
-            {node.isMdgent ? '◈' : '○'}
+            {node.isMdgent ? '◈' : ''}
           </span>
           <span className="tree-name">{node.name}</span>
         </div>
@@ -152,13 +150,6 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
 
   return (
     <div className="directory-tree">
-      <div className="tree-header">
-        <span className="tree-title">FILE EXPLORER</span>
-        <span className="mdgent-indicator">
-          <span className="mdgent-icon">◈</span>
-          <span className="mdgent-label">= Documentation</span>
-        </span>
-      </div>
       <div className="tree-content">
         {loading ? (
           <div className="tree-empty">Loading directory structure...</div>
