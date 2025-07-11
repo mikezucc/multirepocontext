@@ -224,8 +224,8 @@ export class VectorDatabase {
     const chunkStats = this.db.prepare(`
       SELECT 
         COUNT(*) as totalChunks,
-        AVG(LENGTH(content)) as avgChunkSize,
-        MAX(LENGTH(embedding)) as embeddingSize
+        AVG(LENGTH(c.content)) as avgChunkSize,
+        MAX(LENGTH(c.embedding)) as embeddingSize
       FROM chunks c
       JOIN documents d ON c.document_id = d.id
       WHERE d.repository_id = ?
