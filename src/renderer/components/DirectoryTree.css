@@ -4,6 +4,7 @@
   flex-direction: column;
   background: var(--bg-primary);
   border-right: 1px solid var(--border-color);
+  padding-left: 8px;
 }
 
 .tree-header {
