@@ -395,6 +395,13 @@ Format the response as markdown suitable for a README file.`
     if (!repo) return
 
     const dir = path.dirname(filePath)
+    
+    // Skip creating documentation at repository root level
+    if (dir === repo.path) {
+      console.log('[DAEMON] Skipping documentation at repository root')
+      return
+    }
+    
     const docPath = path.join(dir, 'info.mdgent.md')
     
     // Read existing documentation if it exists

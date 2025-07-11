@@ -4,7 +4,7 @@
   --pd-bg-secondary: var(--bg-secondary, #ebe7dd);
   --pd-text-primary: var(--text-primary, #4a453a);
   --pd-text-secondary: var(--text-secondary, #8b8175);
-  --pd-border-color: var(--border-color, #d4cfc2);
+  --pd-border-color: var(--border-color, #3f3f3f);
 }
 
 .prompt-debugger-container {
@@ -14,13 +14,12 @@
   background-color: var(--pd-bg-primary);
   color: var(--pd-text-primary);
   font-family: 'Courier Prime', monospace;
-  border: 2px solid var(--pd-border-color);
 }
 
 .prompt-debugger-header {
   background-color: var(--pd-bg-secondary);
-  border-bottom: 2px solid var(--pd-border-color);
   padding: 12px 16px;
+  border: 1px solid var(--pd-border-color);
 }
 
 .prompt-debugger-title {
@@ -34,7 +33,7 @@
 
 .prompt-debugger-search {
   background-color: var(--pd-bg-secondary);
-  border-bottom: 2px solid var(--pd-border-color);
+  border: 1px solid black;
   padding: 12px 16px;
 }
 
@@ -83,6 +82,7 @@
   flex: 1;
   display: flex;
   overflow: hidden;
+  border: 1px solid var(--pd-border-color);
 }
 
 .prompt-debugger-left-panel {
