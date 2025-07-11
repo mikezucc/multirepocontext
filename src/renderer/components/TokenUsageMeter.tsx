@@ -14,6 +14,7 @@ const TokenUsageMeter: React.FC = () => {
     }
   })
   const [showDetails, setShowDetails] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
   const meterRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -23,12 +24,21 @@ const TokenUsageMeter: React.FC = () => {
     // Listen for token usage updates
     const handleTokenUsageUpdate = (data: TokenUsageData) => {
       setTokenUsage(data)
+      // Brief flash to indicate update
+      setIsUpdating(true)
+      setTimeout(() => setIsUpdating(false), 300)
     }
 
     window.electronAPI.on('token-usage-update', handleTokenUsageUpdate)
 
+    // Set up 3-second refresh interval
+    const refreshInterval = setInterval(() => {
+      window.electronAPI.send('get-token-usage')
+    }, 3000)
+
     return () => {
       window.electronAPI.removeListener('token-usage-update', handleTokenUsageUpdate)
+      clearInterval(refreshInterval)
     }
   }, [])
 

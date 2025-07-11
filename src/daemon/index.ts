@@ -285,6 +285,8 @@ out
       
       try {
         const entries = await fs.readdir(dir, { withFileTypes: true })
+
+        console.log(`[DAEMON] Scanning directory: ${dir} (depth: ${depth}) - ${entries.length} entries found`)
         
         for (const entry of entries) {
           if (files.length >= maxFiles) break
@@ -304,8 +306,7 @@ out
             }
           } else if (entry.isFile()) {
             // Only include .mdgent.md files for embeddings
-            if (entry.name.endsWith('.mdgent.md') && 
-                !ignorePatterns.some(pattern => this.matchesPattern(relativePath, pattern))) {
+            if (!ignorePatterns.some(pattern => this.matchesPattern(relativePath, pattern))) {
               files.push(fullPath)
             }
           }
