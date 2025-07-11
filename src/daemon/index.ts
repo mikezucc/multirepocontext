@@ -796,10 +796,11 @@ With MDgent's Claude integration, you get:
       
       await fs.writeFile(path.join(mcpDir, 'README.md'), readmeContent)
       
-      // Create CLAUDE.md for Claude Code environment
-      const claudeMdContent = await this.generateClaudeMdContent(repository)
-      const claudeMdPath = path.join(repository.path, 'CLAUDE.md')
-      await fs.writeFile(claudeMdPath, claudeMdContent)
+      // Update .gitignore to include .mdgent/
+      await this.updateGitignore(repository.path)
+      
+      // Update CLAUDE.md for Claude Code environment (append if exists)
+      await this.updateClaudeMd(repository)
       
       // Create .claude/settings.json for additional Claude Code configuration
       const claudeSettings = {
@@ -873,6 +874,92 @@ With MDgent's Claude integration, you get:
     }
   }
 
+  private async updateGitignore(repoPath: string): Promise<void> {
+    try {
+      const gitignorePath = path.join(repoPath, '.gitignore')
+      let gitignoreContent = ''
+      
+      // Check if .gitignore exists
+      try {
+        gitignoreContent = await fs.readFile(gitignorePath, 'utf-8')
+      } catch (error) {
+        console.log('[DAEMON] No .gitignore found, will create one')
+      }
+      
+      // Check if .mdgent/ is already in gitignore
+      const lines = gitignoreContent.split('\n')
+      const mdgentPatterns = ['.mdgent/', '.mdgent', '/.mdgent/']
+      const hasRule = lines.some(line => 
+        mdgentPatterns.some(pattern => line.trim() === pattern || line.trim() === `/${pattern}`)
+      )
+      
+      if (!hasRule) {
+        // Add .mdgent/ to gitignore
+        const newContent = gitignoreContent.trim() === '' 
+          ? '.mdgent/'
+          : gitignoreContent.trim() + '\n\n# MDgent files\n.mdgent/'
+        
+        await fs.writeFile(gitignorePath, newContent + '\n')
+        console.log('[DAEMON] Added .mdgent/ to .gitignore')
+      } else {
+        console.log('[DAEMON] .mdgent/ already in .gitignore')
+      }
+    } catch (error) {
+      console.error('[DAEMON] Error updating .gitignore:', error)
+    }
+  }
+
+  private async updateClaudeMd(repository: Repository): Promise<void> {
+    try {
+      const claudeMdPath = path.join(repository.path, 'CLAUDE.md')
+      let existingContent = ''
+      
+      // Check if CLAUDE.md exists
+      try {
+        existingContent = await fs.readFile(claudeMdPath, 'utf-8')
+      } catch (error) {
+        console.log('[DAEMON] No existing CLAUDE.md found')
+      }
+      
+      // Check if MDgent is already mentioned
+      const mdgentKeywords = ['mdgent', 'MDgent', 'Model Context Protocol', 'search_context']
+      const hasMdgentMention = mdgentKeywords.some(keyword => 
+        existingContent.toLowerCase().includes(keyword.toLowerCase())
+      )
+      
+      if (hasMdgentMention) {
+        console.log('[DAEMON] CLAUDE.md already contains MDgent information')
+        return
+      }
+      
+      // Append MDgent information
+      const mdgentSection = `
+
+## MDgent Integration
+
+This repository is enhanced with MDgent's semantic search capabilities:
+
+- **Vector Search**: Use \`search_context: <query>\` to find relevant code
+- **AI Documentation**: Check \`.mdgent.md\` files for comprehensive code analysis
+- **MCP Server**: Auto-loaded via \`.mcp.json\` in Claude Code
+
+### Search Examples:
+- \`search_context: authentication\`
+- \`search_context: database schema\`
+- \`search_context: error handling\`
+`
+
+      const newContent = existingContent.trim() === ''
+        ? await this.generateClaudeMdContent(repository)
+        : existingContent.trim() + mdgentSection
+      
+      await fs.writeFile(claudeMdPath, newContent + '\n')
+      console.log('[DAEMON] Updated CLAUDE.md with MDgent information')
+    } catch (error) {
+      console.error('[DAEMON] Error updating CLAUDE.md:', error)
+    }
+  }
+
   private async generateClaudeMdContent(repository: Repository): Promise<string> {
     const repoName = path.basename(repository.path)
     const gitignore = this.gitignores.get(repository.path)
@@ -880,27 +967,9 @@ With MDgent's Claude integration, you get:
     // Analyze repository structure
     const projectInfo = await this.analyzeProjectStructure(repository.path)
     
-    return `# Claude Code Configuration for ${repoName}
-
-This file configures Claude Code for optimal interaction with this repository.
+    return `# ${repoName}
 
 ## Project Overview
-
-**Repository**: ${repoName}
-**Path**: ${repository.path}
-**Status**: ${repository.status}
-**Last Updated**: ${new Date().toISOString()}
-
-## MDgent Integration
-
-This repository is enhanced with MDgent's AI-powered documentation and search capabilities:
-
-- **Vector Search**: Use the \`search_context\` tool to find relevant code context
-- **Auto-generated Documentation**: Look for \`.mdgent.md\` files for AI-generated code documentation
-- **MCP Server**: Automatically loaded via \`.mcp.json\` when you run Claude Code in this directory
-- **Claude Desktop**: Can also be manually configured using the settings in \`.mdgent/mcp/\`
-
-## Project Structure
 
 ${projectInfo.structure}
 
@@ -912,62 +981,18 @@ ${projectInfo.technologies.map(tech => `- ${tech}`).join('\n')}
 
 ${projectInfo.scripts}
 
-## Search Examples
+## MDgent Integration
 
-When using Claude Code in this repository, you can use these search patterns:
+This repository is enhanced with MDgent's semantic search capabilities:
 
-\`\`\`
-search_context: authentication flow
-search_context: database models
-search_context: API endpoints
-search_context: error handling
-search_context: configuration setup
-\`\`\`
+- **Vector Search**: Use \`search_context: <query>\` to find relevant code
+- **AI Documentation**: Check \`.mdgent.md\` files for comprehensive code analysis
+- **MCP Server**: Auto-loaded via \`.mcp.json\` in Claude Code
 
-## Context Guidelines
-
-### Include in Context
-- Source code files (${projectInfo.sourceExtensions.join(', ')})
-- Documentation files (*.md, *.mdx)
-- Configuration files (package.json, tsconfig.json, etc.)
-- Test files for understanding expected behavior
-
-### Exclude from Context
-- Node modules and dependencies
-- Build output and compiled files
-- Generated documentation (*.mdgent.md)
-- Large data files and binaries
-
-## MDgent Features
-
-### Available Tools
-1. **search_context**: Search the MDgent vector database for relevant code context
-   - Powered by AI-generated embeddings
-   - Returns semantically similar code snippets
-   - Includes file paths and relevance scores
-
-### Documentation Access
-- Check \`.mdgent.md\` files in each directory for AI-generated documentation
-- These files contain detailed analysis of the code structure and functionality
-
-## Best Practices
-
-1. **Use search_context for exploration**: When you need to understand a feature or find related code
-2. **Reference .mdgent.md files**: For quick understanding of module functionality
-3. **Respect .gitignore**: Files ignored by git are also excluded from MDgent analysis
-
-## Configuration
-
-MDgent settings for this repository:
-- Server Port: Check .mdgent/mcp/mcp-config.json
-- Repository ID: ${repository.id}
-- MCP Enabled: true
-
-For additional configuration, see:
-- \`.mcp.json\` - MCP server configuration (auto-detected by Claude Code)
-- \`.claude/settings.json\` - Claude Code specific settings
-- \`.mdgent/mcp/mcp-config.json\` - MCP server configuration for manual setup
-- \`.mdgentignore\` - Patterns for files to exclude from MDgent analysis
+### Search Examples:
+- \`search_context: authentication\`
+- \`search_context: database schema\`
+- \`search_context: error handling\`
 `
   }
 
