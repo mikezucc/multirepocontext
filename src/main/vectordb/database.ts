@@ -196,6 +196,102 @@ export class VectorDatabase {
   bufferToFloat32Array(buffer: Buffer): Float32Array {
     return new Float32Array(buffer.buffer, buffer.byteOffset, buffer.length / 4)
   }
+
+  // Get statistics for a repository
+  async getStatistics(repositoryId: string): Promise<{
+    totalDocuments: number
+    totalChunks: number
+    totalSize: number
+    avgChunksPerDocument: number
+    avgChunkSize: number
+    vectorDimensions: number
+    indexedFiles: string[]
+    lastUpdated: string | null
+  }> {
+    if (!this.db) throw new Error('Database not initialized')
+
+    // Get document count
+    const docStats = this.db.prepare(`
+      SELECT 
+        COUNT(*) as totalDocuments,
+        SUM(LENGTH(content)) as totalContentSize,
+        MAX(updated_at) as lastUpdated
+      FROM documents 
+      WHERE repository_id = ?
+    `).get(repositoryId) as any
+
+    // Get chunk statistics
+    const chunkStats = this.db.prepare(`
+      SELECT 
+        COUNT(*) as totalChunks,
+        AVG(LENGTH(content)) as avgChunkSize,
+        MAX(LENGTH(embedding)) as embeddingSize
+      FROM chunks c
+      JOIN documents d ON c.document_id = d.id
+      WHERE d.repository_id = ?
+    `).get(repositoryId) as any
+
+    // Get list of indexed files
+    const files = this.db.prepare(`
+      SELECT file_path 
+      FROM documents 
+      WHERE repository_id = ? 
+      ORDER BY file_path
+    `).all(repositoryId) as { file_path: string }[]
+
+    // Calculate vector dimensions from embedding size
+    const vectorDimensions = chunkStats.embeddingSize ? chunkStats.embeddingSize / 4 : 0
+
+    return {
+      totalDocuments: docStats.totalDocuments || 0,
+      totalChunks: chunkStats.totalChunks || 0,
+      totalSize: docStats.totalContentSize || 0,
+      avgChunksPerDocument: docStats.totalDocuments > 0 
+        ? (chunkStats.totalChunks || 0) / docStats.totalDocuments 
+        : 0,
+      avgChunkSize: chunkStats.avgChunkSize || 0,
+      vectorDimensions,
+      indexedFiles: files.map(f => f.file_path),
+      lastUpdated: docStats.lastUpdated
+    }
+  }
+
+  // Debug search - returns raw results for a query
+  async debugSearch(repositoryId: string, query: string, limit: number = 10): Promise<{
+    query: string
+    queryEmbedding?: number[]
+    results: Array<{
+      documentId: number
+      filePath: string
+      chunkIndex: number
+      content: string
+      score: number
+      method: 'vector' | 'fts' | 'hybrid'
+      metadata: any
+    }>
+    timing: {
+      embeddingTime: number
+      searchTime: number
+      totalTime: number
+    }
+  }> {
+    if (!this.db) throw new Error('Database not initialized')
+
+    const startTime = Date.now()
+    const timing = {
+      embeddingTime: 0,
+      searchTime: 0,
+      totalTime: 0
+    }
+
+    // This will be filled by the search implementation
+    // For now, return a placeholder
+    return {
+      query,
+      results: [],
+      timing
+    }
+  }
 }
 
 export const vectorDB = new VectorDatabase()

@@ -170,6 +170,20 @@ export class IpcHandler {
         console.error('IPC: Error getting vector stats:', error)
       }
     })
+
+    ipcMain.on('debug-search', async (event, data) => {
+      const { repositoryId, query, limit = 10 } = data
+      try {
+        const results = await this.debugSearch(repositoryId, query, limit)
+        event.reply('debug-search-results', { repositoryId, results })
+      } catch (error) {
+        console.error('IPC: Error in debug search:', error)
+        event.reply('debug-search-results', { 
+          repositoryId, 
+          error: error instanceof Error ? error.message : 'Search failed' 
+        })
+      }
+    })
   }
 
   private startDaemon() {
@@ -358,7 +372,51 @@ export class IpcHandler {
   }
 
   private async getVectorStats(repositoryId: string) {
-    const { documentIndexer } = await import('./vectordb/indexer')
-    return await documentIndexer.getIndexStats(repositoryId)
+    const { vectorDB } = await import('./vectordb/database')
+    return await vectorDB.getStatistics(repositoryId)
+  }
+
+  private async debugSearch(repositoryId: string, query: string, limit: number) {
+    const { hybridSearch } = await import('./vectordb/search')
+    const { embeddingGenerator } = await import('./embeddings/embeddings')
+    
+    const startTime = Date.now()
+    
+    // Generate embedding for the query
+    const embeddingStartTime = Date.now()
+    const queryEmbedding = await embeddingGenerator.generateEmbedding(query)
+    const embeddingTime = Date.now() - embeddingStartTime
+    
+    // Perform search
+    const searchStartTime = Date.now()
+    const searchResults = await hybridSearch.hybridSearch(
+      query,
+      queryEmbedding,
+      repositoryId,
+      { topK: limit }
+    )
+    const searchTime = Date.now() - searchStartTime
+    
+    // Format results for debugging
+    const results = searchResults.map(result => ({
+      documentId: result.documentId,
+      filePath: result.filePath,
+      chunkIndex: result.chunkId,
+      content: result.content,
+      score: result.score,
+      method: 'hybrid' as const,
+      metadata: result.metadata
+    }))
+    
+    return {
+      query,
+      queryEmbedding: Array.from(queryEmbedding).slice(0, 10), // First 10 values for preview
+      results,
+      timing: {
+        embeddingTime,
+        searchTime,
+        totalTime: Date.now() - startTime
+      }
+    }
   }
 }

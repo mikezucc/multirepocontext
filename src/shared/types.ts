@@ -7,9 +7,14 @@ export interface Repository {
   documentCount?: number
   error?: string
   vectorStats?: {
-    documentCount: number
-    chunkCount: number
-    lastIndexed: Date | null
+    totalDocuments: number
+    totalChunks: number
+    totalSize: number
+    avgChunksPerDocument: number
+    avgChunkSize: number
+    vectorDimensions: number
+    indexedFiles: string[]
+    lastUpdated: string | null
   }
 }
 

@@ -141,6 +141,7 @@ out
     }
 
     const gitignore = this.gitignores.get(repoPath)
+    const ignorePatterns = await this.loadIgnorePatterns(repoPath)
     
     // Watch only the current directory level
     const watcher = watch(repoPath, {
@@ -153,8 +154,13 @@ out
           return true
         }
         
+        // Check MDgent ignore patterns
+        if (ignorePatterns.some(pattern => this.matchesPattern(relativePath, pattern))) {
+          return true
+        }
+        
         // Additional hard-coded ignores
-        const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out']
+        const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.mdgent']
         const parts = relativePath.split(path.sep)
         return parts.some(part => hardIgnores.includes(part))
       },
@@ -270,6 +276,9 @@ out
     const gitignore = this.gitignores.get(repoPath)
     const maxFiles = 1000 // Limit total files to prevent memory issues
     
+    // Load user-configurable ignore patterns
+    const ignorePatterns = await this.loadIgnorePatterns(repoPath)
+    
     const scan = async (dir: string, depth = 0): Promise<void> => {
       if (files.length >= maxFiles) return
       if (depth > this.watchDepth * 2) return // Scan deeper than watch for initial analysis
@@ -289,13 +298,18 @@ out
           }
           
           if (entry.isDirectory()) {
-            const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.cache', 'coverage']
+            const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.cache', 'coverage', '.mdgent']
             if (!hardIgnores.includes(entry.name) && !entry.name.startsWith('.')) {
               await scan(fullPath, depth + 1)
             }
           } else if (entry.isFile()) {
             const ext = path.extname(entry.name)
-            if (extensions.includes(ext) && !entry.name.endsWith('.mdgent.md')) {
+            // Skip MDgent-specific files and check custom ignore patterns
+            if (extensions.includes(ext) && 
+                !entry.name.endsWith('.mdgent.md') && 
+                entry.name !== '.mcp.json' &&
+                entry.name !== 'CLAUDE.md' &&
+                !ignorePatterns.some(pattern => this.matchesPattern(relativePath, pattern))) {
               files.push(fullPath)
             }
           }
@@ -312,8 +326,19 @@ out
 
   private async analyzeFile(repoId: string, filePath: string) {
     try {
+      const repo = this.repositories.get(repoId)
+      if (!repo) return
+      
+      const relativePath = path.relative(repo.path, filePath)
+      
+      // Skip MDgent-specific files
+      const ignorePatterns = await this.loadIgnorePatterns(repo.path)
+      if (ignorePatterns.some(pattern => this.matchesPattern(relativePath, pattern))) {
+        console.log('[DAEMON] Skipping ignored file:', relativePath)
+        return
+      }
+      
       const content = await fs.readFile(filePath, 'utf-8')
-      const relativePath = path.relative(this.repositories.get(repoId)!.path, filePath)
       
       // Send file for indexing
       this.sendMessage('index-file', {
@@ -624,6 +649,54 @@ Format the response as markdown suitable for a README file.`
       const rootMcpPath = path.join(repository.path, '.mcp.json')
       await fs.writeFile(rootMcpPath, JSON.stringify(rootMcpConfig, null, 2))
       
+      // Create .mdgentignore file if it doesn't exist
+      const mdgentIgnorePath = path.join(repository.path, '.mdgentignore')
+      try {
+        await fs.access(mdgentIgnorePath)
+        console.log('[DAEMON] .mdgentignore already exists')
+      } catch (error) {
+        // File doesn't exist, create it
+        const ignoreContent = `# MDgent ignore patterns
+# Lines starting with # are comments
+# Patterns support * and ** wildcards
+
+# MDgent generated files
+*.mdgent.md
+.mdgent/**
+.mcp.json
+CLAUDE.md
+.claude/**
+
+# Minified and compiled files
+*.min.js
+*.min.css
+*.map
+
+# Lock files
+*.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Large binary files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.ico
+*.pdf
+*.zip
+*.tar.gz
+
+# Test snapshots
+__snapshots__/**
+
+# Custom patterns (add your own below)
+`
+        await fs.writeFile(mdgentIgnorePath, ignoreContent)
+        console.log('[DAEMON] Created .mdgentignore file')
+      }
+      
       // Create README for MCP setup
       const readmeContent = `# MDgent MCP Server Setup
 
@@ -875,6 +948,7 @@ For additional configuration, see:
 - \`.mcp.json\` - MCP server configuration (auto-detected by Claude Code)
 - \`.claude/settings.json\` - Claude Code specific settings
 - \`.mdgent/mcp/mcp-config.json\` - MCP server configuration for manual setup
+- \`.mdgentignore\` - Patterns for files to exclude from MDgent analysis
 `
   }
 
@@ -968,6 +1042,61 @@ For additional configuration, see:
       technologies: Array.from(technologies).length > 0 ? Array.from(technologies) : ['JavaScript/TypeScript'],
       scripts: scripts || 'No npm scripts found',
       sourceExtensions: Array.from(sourceExtensions).length > 0 ? Array.from(sourceExtensions) : ['.js', '.ts']
+    }
+  }
+
+  private async loadIgnorePatterns(repoPath: string): Promise<string[]> {
+    const defaultPatterns = [
+      '*.mdgent.md',
+      '.mdgent/**',
+      '.mcp.json',
+      'CLAUDE.md',
+      '.claude/**',
+      '*.min.js',
+      '*.min.css',
+      '*.map',
+      '*.lock',
+      'package-lock.json',
+      'yarn.lock',
+      'pnpm-lock.yaml'
+    ]
+    
+    try {
+      // Check for .mdgentignore file
+      const ignorePath = path.join(repoPath, '.mdgentignore')
+      const ignoreContent = await fs.readFile(ignorePath, 'utf-8')
+      const customPatterns = ignoreContent
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('#'))
+      
+      return [...defaultPatterns, ...customPatterns]
+    } catch (error) {
+      // No .mdgentignore file, use defaults
+      return defaultPatterns
+    }
+  }
+  
+  private matchesPattern(filePath: string, pattern: string): boolean {
+    // Simple glob-like pattern matching
+    if (pattern.includes('**')) {
+      // Convert ** to regex
+      const regexPattern = pattern
+        .replace(/\./g, '\\.')
+        .replace(/\*\*/g, '.*')
+        .replace(/\*/g, '[^/]*')
+        .replace(/\?/g, '.')
+      return new RegExp(`^${regexPattern}$`).test(filePath)
+    } else if (pattern.includes('*')) {
+      // Simple wildcard
+      const regexPattern = pattern
+        .replace(/\./g, '\\.')
+        .replace(/\*/g, '.*')
+        .replace(/\?/g, '.')
+      return new RegExp(`^${regexPattern}$`).test(path.basename(filePath))
+    } else {
+      // Exact match or suffix match
+      return filePath === pattern || filePath.endsWith(pattern)
     }
   }
 

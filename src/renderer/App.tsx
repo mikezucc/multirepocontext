@@ -3,6 +3,7 @@ import MasterDetail from './components/MasterDetail'
 import SettingsModal from './components/SettingsModal'
 import StatusBar from './components/StatusBar'
 import TabBar from './components/TabBar'
+import { PromptDebugger } from './components/PromptDebugger'
 import { Repository } from '@shared/types'
 
 declare global {
@@ -19,6 +20,7 @@ function App() {
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [currentView, setCurrentView] = useState<'files' | 'debug'>('files')
 
   useEffect(() => {
     window.electronAPI.send('get-repositories', null)
@@ -63,16 +65,54 @@ function App() {
           onCloseRepo={handleCloseRepo}
           onAddRepo={handleAddRepository}
         />
+        <div className="view-switcher" style={{ marginLeft: 'auto', marginRight: '8px' }}>
+          <button 
+            className={`view-btn ${currentView === 'files' ? 'active' : ''}`}
+            onClick={() => setCurrentView('files')}
+            style={{
+              padding: '4px 8px',
+              marginRight: '4px',
+              background: currentView === 'files' ? '#3b82f6' : 'transparent',
+              color: currentView === 'files' ? 'white' : '#666',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            📁 Files
+          </button>
+          <button 
+            className={`view-btn ${currentView === 'debug' ? 'active' : ''}`}
+            onClick={() => setCurrentView('debug')}
+            style={{
+              padding: '4px 8px',
+              background: currentView === 'debug' ? '#3b82f6' : 'transparent',
+              color: currentView === 'debug' ? 'white' : '#666',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            🔍 Debug
+          </button>
+        </div>
         <button className="settings-btn" onClick={() => setShowSettings(true)}>
           ⚙
         </button>
       </div>
-      <MasterDetail
-        repositories={repositories}
-        selectedRepo={selectedRepo}
-        onSelectRepo={setSelectedRepo}
-        onAddRepo={handleAddRepository}
-      />
+      {currentView === 'files' ? (
+        <MasterDetail
+          repositories={repositories}
+          selectedRepo={selectedRepo}
+          onSelectRepo={setSelectedRepo}
+          onAddRepo={handleAddRepository}
+        />
+      ) : (
+        <PromptDebugger
+          repositoryId={selectedRepo?.id || null}
+          repositoryName={selectedRepo?.name}
+        />
+      )}
       <SettingsModal 
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
