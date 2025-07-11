@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { formatTokenCount, TokenUsageData } from '@shared/tokenUtils'
 import './TokenUsageMeter.css'
 
@@ -14,6 +14,7 @@ const TokenUsageMeter: React.FC = () => {
     }
   })
   const [showDetails, setShowDetails] = useState(false)
+  const meterRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // Request initial token usage stats
@@ -31,6 +32,22 @@ const TokenUsageMeter: React.FC = () => {
     }
   }, [])
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (meterRef.current && !meterRef.current.contains(event.target as Node)) {
+        setShowDetails(false)
+      }
+    }
+
+    if (showDetails) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showDetails])
+
   const totalTokensToday = 
     tokenUsage.today.mcp.input + tokenUsage.today.mcp.output +
     tokenUsage.today.anthropic.input + tokenUsage.today.anthropic.output
@@ -40,7 +57,7 @@ const TokenUsageMeter: React.FC = () => {
     tokenUsage.total.anthropic.input + tokenUsage.total.anthropic.output
 
   return (
-    <div className="token-usage-meter">
+    <div className="token-usage-meter" ref={meterRef}>
       <div 
         className="token-summary"
         onClick={() => setShowDetails(!showDetails)}
@@ -48,8 +65,7 @@ const TokenUsageMeter: React.FC = () => {
       >
         <span className="token-icon">🪙</span>
         <span className="token-count">
-          Today: {formatTokenCount(totalTokensToday)} | 
-          Total: {formatTokenCount(totalTokensAllTime)}
+          {formatTokenCount(totalTokensToday)} / {formatTokenCount(totalTokensAllTime)}
         </span>
         <span className="expand-icon">{showDetails ? '▼' : '▶'}</span>
       </div>

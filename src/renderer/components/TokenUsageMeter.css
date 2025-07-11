@@ -1,43 +1,58 @@
 .token-usage-meter {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(42, 63, 95, 0.9);
-  border: 1px solid #3a5f8f;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 0.85em;
-  z-index: 1000;
-  backdrop-filter: blur(10px);
+  position: relative;
+  margin-left: 8px;
+  -webkit-app-region: no-drag;
 }
 
 .token-summary {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   user-select: none;
+  padding: 4px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  height: 24px;
+}
+
+.token-summary:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .token-icon {
-  font-size: 1.2em;
+  font-size: 1.1em;
+  line-height: 1;
 }
 
 .token-count {
-  color: #e0e0e0;
+  color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .expand-icon {
-  margin-left: 4px;
-  font-size: 0.8em;
+  margin-left: 2px;
+  font-size: 0.7em;
   opacity: 0.7;
 }
 
 .token-details {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: rgba(42, 63, 95, 0.98);
+  border: 1px solid #3a5f8f;
+  border-radius: 6px;
+  padding: 16px;
+  min-width: 300px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   animation: slideDown 0.2s ease-out;
+  z-index: 1000;
 }
 
 @keyframes slideDown {
@@ -106,12 +121,3 @@
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .token-usage-meter {
-    position: relative;
-    top: auto;
-    right: auto;
-    margin-bottom: 10px;
-  }
-}

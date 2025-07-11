@@ -57,7 +57,6 @@ function App() {
 
   return (
     <div className="app">
-      <TokenUsageMeter />
       <div className="titlebar">
         <div className="title">MDgent v0.1.0</div>
         <TabBar
@@ -111,6 +110,7 @@ function App() {
             Debug
           </button>
         </div>
+        <TokenUsageMeter />
         <button className="settings-btn" onClick={() => setShowSettings(true)}>
           ⚙
         </button>
