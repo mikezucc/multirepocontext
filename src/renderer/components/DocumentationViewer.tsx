@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { marked } from 'marked'
 import { Repository } from '@shared/types'
 import DirectoryTree from './DirectoryTree'
+import MarkdownPreview from './MarkdownPreview'
 import './DocumentationViewer.css'
 
 interface DocumentationViewerProps {
@@ -140,41 +141,68 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
           />
         </div>
         <div className="content-panel">
-          <div className="idle-state">
-            <div className="idle-icon">⚡</div>
-            <h3>Repository Ready for Analysis</h3>
-            <p>This repository hasn't been analyzed yet. Click the button below to scan all files and generate documentation.</p>
-            <button 
-              className="scan-button"
-              onClick={() => window.electronAPI.send('scan-repository', { id: repository.id })}
-            >
-              Start Analysis
-            </button>
-            {selectedFile && (
-              <div className="selected-file">
-                Selected: {selectedFile}
-              </div>
-            )}
-          </div>
+          {selectedFile && selectedFile.endsWith('.md') ? (
+            <MarkdownPreview filePath={selectedFile} />
+          ) : (
+            <div className="idle-state">
+              <div className="idle-icon">⚡</div>
+              <h3>Repository Ready for Analysis</h3>
+              <p>This repository hasn't been analyzed yet. Click the button below to scan all files and generate documentation.</p>
+              <button 
+                className="scan-button"
+                onClick={() => window.electronAPI.send('scan-repository', { id: repository.id })}
+              >
+                Start Analysis
+              </button>
+              {selectedFile && !selectedFile.endsWith('.md') && (
+                <div className="selected-file">
+                  <div className="file-notice">
+                    Selected: {selectedFile}
+                    <br />
+                    <span className="file-hint">Select a .md file to preview</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="documentation-viewer">
-      {html ? (
-        <div 
-          className="markdown-content"
-          dangerouslySetInnerHTML={{ __html: html }}
+    <div className="documentation-viewer with-tree">
+      <div className="tree-panel">
+        <DirectoryTree 
+          repositoryId={repository.id}
+          onFileSelect={setSelectedFile}
         />
-      ) : (
-        <div className="no-content">
-          <div className="no-content-message">
-            No documentation generated yet
+      </div>
+      <div className="content-panel">
+        {selectedFile && selectedFile.endsWith('.md') ? (
+          <MarkdownPreview filePath={selectedFile} />
+        ) : html ? (
+          <div 
+            className="markdown-content"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        ) : (
+          <div className="no-content">
+            <div className="no-content-message">
+              No documentation generated yet
+            </div>
+            {selectedFile && !selectedFile.endsWith('.md') && (
+              <div className="selected-file">
+                <div className="file-notice">
+                  Selected: {selectedFile}
+                  <br />
+                  <span className="file-hint">Select a .md file to preview</span>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

@@ -1,0 +1,239 @@
+.markdown-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+.markdown-preview.loading,
+.markdown-preview.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+/* Loading State */
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Error State */
+.error-icon {
+  font-size: 48px;
+  color: #ef4444;
+  margin-bottom: 16px;
+}
+
+.error-message {
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.error-path {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: monospace;
+}
+
+/* Preview Header */
+.preview-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.file-icon {
+  font-size: 18px;
+}
+
+.file-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.file-path {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: monospace;
+  opacity: 0.8;
+}
+
+/* Preview Content */
+.preview-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+.markdown-rendered {
+  max-width: 800px;
+  margin: 0 auto;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Markdown Styles */
+.markdown-rendered h1,
+.markdown-rendered h2,
+.markdown-rendered h3,
+.markdown-rendered h4,
+.markdown-rendered h5,
+.markdown-rendered h6 {
+  color: var(--text-bright);
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown-rendered h1 {
+  font-size: 2em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.3em;
+}
+
+.markdown-rendered h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.3em;
+}
+
+.markdown-rendered h3 { font-size: 1.25em; }
+.markdown-rendered h4 { font-size: 1em; }
+.markdown-rendered h5 { font-size: 0.875em; }
+.markdown-rendered h6 { font-size: 0.85em; }
+
+.markdown-rendered p {
+  margin-bottom: 16px;
+}
+
+.markdown-rendered a {
+  color: #4a90e2;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.markdown-rendered a:hover {
+  color: #357abd;
+  text-decoration: underline;
+}
+
+.markdown-rendered ul,
+.markdown-rendered ol {
+  padding-left: 24px;
+  margin-bottom: 16px;
+}
+
+.markdown-rendered li {
+  margin-bottom: 4px;
+}
+
+.markdown-rendered blockquote {
+  margin: 0 0 16px 0;
+  padding-left: 16px;
+  border-left: 4px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.markdown-rendered code {
+  background: var(--bg-secondary);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.markdown-rendered pre {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 16px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.markdown-rendered pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.markdown-rendered table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.markdown-rendered th,
+.markdown-rendered td {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.markdown-rendered th {
+  background: var(--bg-secondary);
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.markdown-rendered tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.markdown-rendered img {
+  max-width: 100%;
+  height: auto;
+  margin: 16px 0;
+}
+
+.markdown-rendered hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 24px 0;
+}
+
+/* Scrollbar styling */
+.preview-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.preview-content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.preview-content::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.preview-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

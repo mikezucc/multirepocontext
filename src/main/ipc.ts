@@ -85,6 +85,20 @@ export class IpcHandler {
       const { id } = data
       this.sendToDaemon('analyze-repository', { id })
     })
+
+    ipcMain.on('read-file', async (event, data) => {
+      const { path } = data
+      try {
+        const content = fs.readFileSync(path, 'utf-8')
+        event.reply('file-content', { path, content, error: null })
+      } catch (error) {
+        event.reply('file-content', { 
+          path, 
+          content: null, 
+          error: error instanceof Error ? error.message : 'Failed to read file' 
+        })
+      }
+    })
   }
 
   private startDaemon() {
