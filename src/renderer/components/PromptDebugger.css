@@ -1,0 +1,283 @@
+/* Terminal theme colors */
+.prompt-debugger {
+  --pd-bg-primary: var(--bg-primary, #f5f2eb);
+  --pd-bg-secondary: var(--bg-secondary, #ebe7dd);
+  --pd-text-primary: var(--text-primary, #4a453a);
+  --pd-text-secondary: var(--text-secondary, #8b8175);
+  --pd-border-color: var(--border-color, #d4cfc2);
+}
+
+.prompt-debugger-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--pd-bg-primary);
+  color: var(--pd-text-primary);
+  font-family: 'Courier Prime', monospace;
+}
+
+.prompt-debugger-header {
+  background-color: var(--pd-bg-secondary);
+  border-bottom: 1px solid var(--pd-border-color);
+  padding: 12px 16px;
+}
+
+.prompt-debugger-title {
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--pd-text-primary);
+}
+
+.prompt-debugger-search {
+  background-color: var(--pd-bg-secondary);
+  border-bottom: 1px solid var(--pd-border-color);
+  padding: 12px 16px;
+}
+
+.prompt-debugger-search-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--pd-border-color);
+  border-radius: 3px;
+  background-color: var(--pd-bg-primary);
+  color: var(--pd-text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.prompt-debugger-search-input:focus {
+  border-color: var(--pd-text-primary);
+}
+
+.prompt-debugger-search-button {
+  padding: 8px 16px;
+  background-color: var(--pd-text-primary);
+  color: var(--pd-bg-primary);
+  border: 1px solid var(--pd-border-color);
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.prompt-debugger-search-button:hover:not(:disabled) {
+  background-color: var(--pd-text-secondary);
+}
+
+.prompt-debugger-search-button:disabled {
+  background-color: var(--pd-bg-secondary);
+  color: var(--pd-text-secondary);
+  cursor: not-allowed;
+}
+
+.prompt-debugger-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.prompt-debugger-left-panel {
+  width: 50%;
+  border-right: 1px solid var(--pd-border-color);
+  background-color: var(--pd-bg-primary);
+  overflow-y: auto;
+}
+
+.prompt-debugger-right-panel {
+  flex: 1;
+  background-color: var(--pd-bg-primary);
+  overflow-y: auto;
+}
+
+.prompt-debugger-section {
+  border-bottom: 1px solid var(--pd-border-color);
+}
+
+.prompt-debugger-section-header {
+  width: 100%;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+  color: var(--pd-text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+}
+
+.prompt-debugger-section-header:hover {
+  background-color: var(--pd-bg-secondary);
+}
+
+.prompt-debugger-section-title {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prompt-debugger-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 0 16px 16px;
+  font-size: 13px;
+}
+
+.prompt-debugger-stat-label {
+  color: var(--pd-text-secondary);
+}
+
+.prompt-debugger-stat-value {
+  margin-left: 8px;
+  font-weight: 600;
+  color: var(--pd-text-primary);
+}
+
+.prompt-debugger-result-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--pd-border-color);
+}
+
+.prompt-debugger-result-item:hover {
+  background-color: var(--pd-bg-secondary);
+}
+
+.prompt-debugger-result-item.selected {
+  background-color: var(--pd-bg-secondary);
+  border-left: 3px solid var(--pd-text-primary);
+  padding-left: 13px;
+}
+
+.prompt-debugger-file-name {
+  font-weight: 600;
+  color: var(--pd-text-primary);
+  font-size: 13px;
+}
+
+.prompt-debugger-chunk-index {
+  color: var(--pd-text-secondary);
+  font-size: 12px;
+}
+
+.prompt-debugger-content-preview {
+  font-size: 12px;
+  color: var(--pd-text-secondary);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.prompt-debugger-score {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pd-text-primary);
+}
+
+.prompt-debugger-method {
+  font-size: 11px;
+  color: var(--pd-text-secondary);
+}
+
+.prompt-debugger-detail-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--pd-border-color);
+  font-weight: 600;
+  color: var(--pd-text-primary);
+}
+
+.prompt-debugger-detail-content {
+  padding: 16px;
+}
+
+.prompt-debugger-info-box {
+  background-color: var(--pd-bg-secondary);
+  border-radius: 3px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.prompt-debugger-info-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--pd-text-primary);
+}
+
+.prompt-debugger-info-row {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.prompt-debugger-info-label {
+  color: var(--pd-text-secondary);
+}
+
+.prompt-debugger-info-value {
+  margin-left: 8px;
+  color: var(--pd-text-primary);
+}
+
+.prompt-debugger-code-block {
+  background-color: var(--pd-bg-secondary);
+  border-radius: 3px;
+  padding: 16px;
+  font-family: 'Courier Prime', monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+  color: var(--pd-text-primary);
+}
+
+.prompt-debugger-empty-state {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pd-text-secondary);
+}
+
+.prompt-debugger-empty-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  opacity: 0.5;
+}
+
+.prompt-debugger-empty-text {
+  text-align: center;
+  font-size: 14px;
+}
+
+.prompt-debugger-timing {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px 8px;
+  font-size: 11px;
+  color: var(--pd-text-secondary);
+}
+
+.prompt-debugger-timing-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

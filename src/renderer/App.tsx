@@ -65,35 +65,48 @@ function App() {
           onCloseRepo={handleCloseRepo}
           onAddRepo={handleAddRepository}
         />
-        <div className="view-switcher" style={{ marginLeft: 'auto', marginRight: '8px' }}>
+        <div className="view-switcher" style={{ 
+          marginLeft: 'auto', 
+          marginRight: '8px',
+          display: 'flex',
+          gap: '4px',
+          WebkitAppRegion: 'no-drag' as any
+        }}>
           <button 
             className={`view-btn ${currentView === 'files' ? 'active' : ''}`}
             onClick={() => setCurrentView('files')}
             style={{
-              padding: '4px 8px',
-              marginRight: '4px',
-              background: currentView === 'files' ? '#3b82f6' : 'transparent',
-              color: currentView === 'files' ? 'white' : '#666',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              cursor: 'pointer'
+              padding: '4px 12px',
+              background: currentView === 'files' ? 'var(--text-primary)' : 'var(--bg-secondary)',
+              color: currentView === 'files' ? 'var(--bg-primary)' : 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontFamily: 'inherit',
+              WebkitAppRegion: 'no-drag' as any,
+              transition: 'all 0.2s ease'
             }}
           >
-            📁 Files
+            [F] Files
           </button>
           <button 
             className={`view-btn ${currentView === 'debug' ? 'active' : ''}`}
             onClick={() => setCurrentView('debug')}
             style={{
-              padding: '4px 8px',
-              background: currentView === 'debug' ? '#3b82f6' : 'transparent',
-              color: currentView === 'debug' ? 'white' : '#666',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              cursor: 'pointer'
+              padding: '4px 12px',
+              background: currentView === 'debug' ? 'var(--text-primary)' : 'var(--bg-secondary)',
+              color: currentView === 'debug' ? 'var(--bg-primary)' : 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontFamily: 'inherit',
+              WebkitAppRegion: 'no-drag' as any,
+              transition: 'all 0.2s ease'
             }}
           >
-            🔍 Debug
+            [D] Debug
           </button>
         </div>
         <button className="settings-btn" onClick={() => setShowSettings(true)}>
