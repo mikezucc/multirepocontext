@@ -3,11 +3,14 @@ import { marked } from 'marked'
 import Prism from 'prismjs'
 import '../styles/prism-beige.css'
 // Import common language components for markdown code blocks
-import 'prismjs/components/prism-typescript'
+// Base languages first
 import 'prismjs/components/prism-javascript'
-import 'prismjs/components/prism-jsx'
-import 'prismjs/components/prism-tsx'
 import 'prismjs/components/prism-css'
+// Languages that depend on others
+import 'prismjs/components/prism-typescript' // depends on javascript
+import 'prismjs/components/prism-jsx' // depends on javascript
+import 'prismjs/components/prism-tsx' // depends on typescript
+// Other languages
 import 'prismjs/components/prism-json'
 import 'prismjs/components/prism-python'
 import 'prismjs/components/prism-bash'

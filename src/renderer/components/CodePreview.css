@@ -50,7 +50,6 @@
 
 /* Preview Header */
 .preview-header {
-  padding: 16px 24px;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-secondary);
   flex-shrink: 0;

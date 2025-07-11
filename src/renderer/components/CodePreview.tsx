@@ -2,12 +2,18 @@ import React, { useEffect, useState, useRef } from 'react'
 import Prism from 'prismjs'
 import '../styles/prism-beige.css'
 // Import common language components
-import 'prismjs/components/prism-typescript'
+// Base languages first (order matters!)
+import 'prismjs/components/prism-c'
 import 'prismjs/components/prism-javascript'
-import 'prismjs/components/prism-jsx'
-import 'prismjs/components/prism-tsx'
 import 'prismjs/components/prism-css'
-import 'prismjs/components/prism-scss'
+// Languages that depend on others
+import 'prismjs/components/prism-typescript' // depends on javascript
+import 'prismjs/components/prism-jsx' // depends on javascript
+import 'prismjs/components/prism-tsx' // depends on typescript
+import 'prismjs/components/prism-scss' // depends on css
+import 'prismjs/components/prism-cpp' // depends on c
+import 'prismjs/components/prism-csharp' // depends on c
+// Other languages
 import 'prismjs/components/prism-json'
 import 'prismjs/components/prism-markdown'
 import 'prismjs/components/prism-python'
@@ -17,9 +23,6 @@ import 'prismjs/components/prism-sql'
 import 'prismjs/components/prism-go'
 import 'prismjs/components/prism-rust'
 import 'prismjs/components/prism-java'
-import 'prismjs/components/prism-csharp'
-import 'prismjs/components/prism-cpp'
-import 'prismjs/components/prism-c'
 import './CodePreview.css'
 
 interface CodePreviewProps {
@@ -151,7 +154,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ filePath }) => {
         </div>
         <div className="file-path">{filePath}</div>
       </div>
-      <div className="preview-content">
+      <div className="preview-content-code">
         <div className="code-container">
           <div className="line-numbers">
             {lines.map((_, index) => (
