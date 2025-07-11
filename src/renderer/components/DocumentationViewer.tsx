@@ -3,6 +3,8 @@ import { marked } from 'marked'
 import { Repository } from '@shared/types'
 import DirectoryTree from './DirectoryTree'
 import MarkdownPreview from './MarkdownPreview'
+import MarkdownEditor from './MarkdownEditor'
+import CodePreview from './CodePreview'
 import './DocumentationViewer.css'
 
 interface DocumentationViewerProps {
@@ -28,6 +30,20 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
   const [currentDoc, setCurrentDoc] = useState(documentation)
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
   const [showTree, setShowTree] = useState(true)
+  const [editMode, setEditMode] = useState(false)
+  const [fileContent, setFileContent] = useState<string>('')
+
+  // Load file content when a markdown file is selected
+  useEffect(() => {
+    if (selectedFile && (selectedFile.endsWith('.md') || selectedFile.endsWith('.mdgent'))) {
+      window.electronAPI.send('read-file', { path: selectedFile })
+    }
+  }, [selectedFile])
+
+  // Reset edit mode when file changes
+  useEffect(() => {
+    setEditMode(false)
+  }, [selectedFile])
 
   useEffect(() => {
     const handleDocReady = (data: { repositoryId: string, content: string }) => {
@@ -36,12 +52,29 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
       }
     }
 
+    const handleFileContent = (data: { path: string; content: string | null; error: string | null }) => {
+      if (data.path === selectedFile && data.content !== null) {
+        setFileContent(data.content)
+      }
+    }
+
+    const handleFileSaved = (data: { path: string; success: boolean; error?: string }) => {
+      if (data.path === selectedFile && data.success) {
+        // File saved successfully
+        console.log('File saved successfully')
+      }
+    }
+
     window.electronAPI.on('documentation-ready', handleDocReady)
+    window.electronAPI.on('file-content', handleFileContent)
+    window.electronAPI.on('file-saved', handleFileSaved)
 
     return () => {
       window.electronAPI.removeListener('documentation-ready', handleDocReady)
+      window.electronAPI.removeListener('file-content', handleFileContent)
+      window.electronAPI.removeListener('file-saved', handleFileSaved)
     }
-  }, [repository])
+  }, [repository, selectedFile])
 
   useEffect(() => {
     if (currentDoc) {
@@ -83,6 +116,35 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
       }
     }
   }, [currentDoc])
+
+  const handleSaveFile = (content: string) => {
+    if (selectedFile) {
+      window.electronAPI.send('save-file', { path: selectedFile, content })
+    }
+  }
+
+  const renderFileContent = () => {
+    if (!selectedFile) return null
+
+    const isMarkdown = selectedFile.endsWith('.md') || selectedFile.endsWith('.mdgent')
+    
+    if (isMarkdown && editMode) {
+      return <MarkdownEditor filePath={selectedFile} content={fileContent} onSave={handleSaveFile} />
+    } else if (isMarkdown) {
+      return (
+        <div className="preview-with-controls">
+          <div className="preview-controls">
+            <button className="edit-btn" onClick={() => setEditMode(true)}>
+              Edit
+            </button>
+          </div>
+          <MarkdownPreview filePath={selectedFile} />
+        </div>
+      )
+    } else {
+      return <CodePreview filePath={selectedFile} />
+    }
+  }
 
   if (!repository) {
     return (
@@ -141,8 +203,8 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
           />
         </div>
         <div className="content-panel">
-          {selectedFile && (selectedFile.endsWith('.md') || selectedFile.endsWith('.mdgent')) ? (
-            <MarkdownPreview filePath={selectedFile} />
+          {selectedFile ? (
+            renderFileContent()
           ) : (
             <div className="idle-state">
               <div className="idle-icon">⚡</div>
@@ -154,15 +216,6 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
               >
                 Start Analysis
               </button>
-              {selectedFile && !selectedFile.endsWith('.md') && !selectedFile.endsWith('.mdgent') && (
-                <div className="selected-file">
-                  <div className="file-notice">
-                    Selected: {selectedFile}
-                    <br />
-                    <span className="file-hint">Select a .md or .mdgent file to preview</span>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -179,8 +232,8 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
         />
       </div>
       <div className="content-panel">
-        {selectedFile && (selectedFile.endsWith('.md') || selectedFile.endsWith('.mdgent')) ? (
-          <MarkdownPreview filePath={selectedFile} />
+        {selectedFile ? (
+          renderFileContent()
         ) : html ? (
           <div 
             className="markdown-content"
@@ -191,15 +244,6 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
             <div className="no-content-message">
               No documentation generated yet
             </div>
-            {selectedFile && !selectedFile.endsWith('.md') && !selectedFile.endsWith('.mdgent') && (
-              <div className="selected-file">
-                <div className="file-notice">
-                  Selected: {selectedFile}
-                  <br />
-                  <span className="file-hint">Select a .md or .mdgent file to preview</span>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

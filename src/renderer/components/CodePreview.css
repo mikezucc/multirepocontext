@@ -1,0 +1,156 @@
+.code-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+.code-preview.loading,
+.code-preview.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+/* Loading State */
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+.loading-text {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Error State */
+.error-icon {
+  font-size: 48px;
+  color: var(--error-color);
+  margin-bottom: 16px;
+}
+
+.error-message {
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.error-path {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: monospace;
+}
+
+/* Preview Header */
+.preview-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.file-icon {
+  font-size: 18px;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.file-language {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--border-color);
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.file-path {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: monospace;
+  opacity: 0.8;
+}
+
+/* Preview Content */
+.preview-content {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-primary);
+}
+
+.code-container {
+  display: flex;
+  min-height: 100%;
+}
+
+.line-numbers {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  padding: 16px 0;
+  text-align: right;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.line-number {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: 'Courier Prime', monospace;
+  line-height: 1.6;
+  padding: 0 16px;
+}
+
+.code-content {
+  flex: 1;
+  padding: 16px 24px;
+  margin: 0;
+  font-family: 'Courier Prime', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  overflow-x: auto;
+}
+
+/* Syntax highlighting placeholders */
+.language-javascript,
+.language-typescript {
+  color: var(--text-primary);
+}
+
+/* Scrollbar styling */
+.preview-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.preview-content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.preview-content::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.preview-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

@@ -70,9 +70,6 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
         </div>
       </div>
       <div className="detail-pane">
-        <div className="pane-header">
-          <span className="header-text">{selectedRepo?.name ?? '-'}</span>
-        </div>
         <DocumentationViewer
           repository={selectedRepo}
           documentation={documentation}

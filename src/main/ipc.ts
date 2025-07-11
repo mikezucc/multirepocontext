@@ -102,6 +102,23 @@ export class IpcHandler {
         })
       }
     })
+
+    ipcMain.on('save-file', async (event, data) => {
+      console.log('IPC: save-file request received for:', data.path)
+      const { path, content } = data
+      try {
+        fs.writeFileSync(path, content, 'utf-8')
+        console.log('IPC: Successfully saved file')
+        event.reply('file-saved', { path, success: true })
+      } catch (error) {
+        console.error('IPC: Error saving file:', error)
+        event.reply('file-saved', { 
+          path, 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Failed to save file' 
+        })
+      }
+    })
   }
 
   private startDaemon() {
