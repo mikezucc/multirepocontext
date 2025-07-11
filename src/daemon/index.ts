@@ -486,7 +486,7 @@ Format the response as markdown suitable for a README file.`
         
         for (const entry of entries) {
           const fullPath = path.join(dirPath, entry.name)
-          console.log('[DAEMON] Processing entry:', fullPath)
+          // console.log('[DAEMON] Processing entry:', fullPath)
           const relativePath = path.relative(repo.path, fullPath)
           
           // Skip gitignored files
@@ -569,7 +569,10 @@ Format the response as markdown suitable for a README file.`
       await fs.mkdir(hooksDir, { recursive: true })
       
       // Read the hook template
-      const hookTemplatePath = path.join(__dirname, '../../resources/pretooluse-hook.js')
+      const isDev = process.env.NODE_ENV === 'development'
+      const hookTemplatePath = isDev 
+        ? path.join(__dirname, '../../resources/pretooluse-hook.js')
+        : path.join(process.resourcesPath, 'resources/pretooluse-hook.js')
       let hookContent = await fs.readFile(hookTemplatePath, 'utf-8')
       
       // Replace placeholders

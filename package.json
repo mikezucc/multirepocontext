@@ -9,12 +9,26 @@
     "dist": "npm run build && electron-builder",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:win": "npm run build && electron-builder --win",
-    "dist:linux": "npm run build && electron-builder --linux"
+    "dist:linux": "npm run build && electron-builder --linux",
+    "postinstall": "electron-rebuild",
+    "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
+  "build": {
+    "npmRebuild": true,
+    "nodeGypRebuild": false,
+    "buildDependenciesFromSource": false,
+    "extraResources": [
+      {
+        "from": "resources/",
+        "to": "resources/",
+        "filter": ["**/*"]
+      }
+    ]
+  },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.3",
@@ -23,6 +37,7 @@
     "@vitejs/plugin-react": "^4.6.0",
     "electron": "^37.2.1",
     "electron-builder": "^26.0.12",
+    "electron-rebuild": "^3.2.9",
     "electron-vite": "^4.0.0",
     "typescript": "^5.8.3",
     "vite": "^7.0.4"

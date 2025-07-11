@@ -4,7 +4,9 @@ import { resolve } from 'path'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [externalizeDepsPlugin({
+      exclude: []
+    })],
     build: {
       rollupOptions: {
         input: {
