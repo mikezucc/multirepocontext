@@ -85,6 +85,7 @@ body::before {
   text-transform: uppercase;
   flex-shrink: 0;
   margin-right: 16px;
+  margin-left: 75px;
 }
 
 button {
