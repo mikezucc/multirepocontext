@@ -63,6 +63,12 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
 
   useEffect(() => {
     if (repositoryId) {
+      // Reset state when repository changes
+      setStats(null)
+      setSearchResults(null)
+      setSelectedResult(null)
+      setQuery('')
+      
       // Request vector stats
       window.electronAPI.send('get-vector-stats', { id: repositoryId })
     }
@@ -70,8 +76,12 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
 
   useEffect(() => {
     // Listen for vector stats
-    const handleVectorStats = (_: any, data: { repositoryId: string, stats: VectorStats }) => {
-      if (data.repositoryId === repositoryId) {
+    const handleVectorStats = (_: any, data: { repositoryId: string, stats: VectorStats | null, error?: string }) => {
+      if (data.error) {
+        console.error('Vector stats error:', data.error)
+        return
+      }
+      if (data.repositoryId === repositoryId && data.stats) {
         setStats(data.stats)
       }
     }

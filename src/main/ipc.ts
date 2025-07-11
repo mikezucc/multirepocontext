@@ -164,16 +164,23 @@ export class IpcHandler {
     ipcMain.on('get-vector-stats', async (event, data) => {
       const { id } = data
       try {
+        console.log('IPC: get-vector-stats request received for:', id)
         const stats = await this.getVectorStats(id)
         event.reply('vector-stats', { repositoryId: id, stats })
       } catch (error) {
         console.error('IPC: Error getting vector stats:', error)
+        event.reply('vector-stats', { 
+          repositoryId: id, 
+          stats: null,
+          error: error instanceof Error ? error.message : 'Failed to get stats' 
+        })
       }
     })
 
     ipcMain.on('debug-search', async (event, data) => {
       const { repositoryId, query, limit = 10 } = data
       try {
+        console.log('IPC: debug-search request received for:', data);
         const results = await this.debugSearch(repositoryId, query, limit)
         event.reply('debug-search-results', { repositoryId, results })
       } catch (error) {
@@ -288,13 +295,17 @@ export class IpcHandler {
       case 'directory-tree':
         this.sendToRenderer('directory-tree', message.data)
         // Also fetch vector stats when loading directory
-        this.getVectorStats(message.data.repositoryId).then(stats => {
-          const repo = this.repositories.get(message.data.repositoryId)
-          if (repo) {
-            repo.vectorStats = stats
-            this.sendToRenderer('repository-status', Array.from(this.repositories.values()))
-          }
-        })
+        this.getVectorStats(message.data.repositoryId)
+          .then(stats => {
+            const repo = this.repositories.get(message.data.repositoryId)
+            if (repo) {
+              repo.vectorStats = stats
+              this.sendToRenderer('repository-status', Array.from(this.repositories.values()))
+            }
+          })
+          .catch(error => {
+            console.error('[IPC] Error fetching vector stats on directory load:', error)
+          })
         break
       
       

@@ -15,7 +15,8 @@ const api = {
       'save-file',
       'setup-mcp-server',
       'regenerate-embeddings',
-      'get-vector-stats'
+      'get-vector-stats',
+      'debug-search'
     ]
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data)
@@ -34,7 +35,8 @@ const api = {
       'file-saved',
       'mcp-status',
       'embeddings-status',
-      'vector-stats'
+      'vector-stats',
+      'debug-search-results'
     ]
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (event, ...args) => callback(...args))
