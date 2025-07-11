@@ -96,7 +96,9 @@
   max-width: 800px;
   margin: 0 auto;
   color: var(--text-primary);
-  line-height: 1.6;
+  line-height: 1.4;
+  font-size: 14px;
+  font-family: 'Golos Text', monospace;
 }
 
 /* Markdown Styles */
@@ -107,31 +109,31 @@
 .markdown-rendered h5,
 .markdown-rendered h6 {
   color: var(--text-bright);
-  margin-top: 24px;
-  margin-bottom: 16px;
+  margin-top: 16px;
+  margin-bottom: 12px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .markdown-rendered h1 {
-  font-size: 2em;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.3em;
-}
-
-.markdown-rendered h2 {
   font-size: 1.5em;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.3em;
 }
 
-.markdown-rendered h3 { font-size: 1.25em; }
+.markdown-rendered h2 {
+  font-size: 1.3em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.3em;
+}
+
+.markdown-rendered h3 { font-size: 1.1em; }
 .markdown-rendered h4 { font-size: 1em; }
-.markdown-rendered h5 { font-size: 0.875em; }
+.markdown-rendered h5 { font-size: 0.9em; }
 .markdown-rendered h6 { font-size: 0.85em; }
 
 .markdown-rendered p {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .markdown-rendered a {
@@ -147,8 +149,8 @@
 
 .markdown-rendered ul,
 .markdown-rendered ol {
-  padding-left: 24px;
-  margin-bottom: 16px;
+  padding-left: 20px;
+  margin-bottom: 12px;
 }
 
 .markdown-rendered li {
@@ -156,8 +158,8 @@
 }
 
 .markdown-rendered blockquote {
-  margin: 0 0 16px 0;
-  padding-left: 16px;
+  margin: 0 0 12px 0;
+  padding-left: 12px;
   border-left: 4px solid var(--border-color);
   color: var(--text-secondary);
 }
@@ -166,17 +168,19 @@
   background: var(--bg-secondary);
   padding: 2px 4px;
   border-radius: 3px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9em;
+  font-family: 'Courier Prime', monospace;
+  font-size: 1em;
+  font-weight: 550;
 }
 
 .markdown-rendered pre {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  padding: 16px;
+  padding: 12px;
   overflow-x: auto;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  font-size: 1em;
 }
 
 .markdown-rendered pre code {

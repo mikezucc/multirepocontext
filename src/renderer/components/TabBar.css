@@ -1,18 +1,17 @@
 .tab-bar {
-  background: #1a1a1a;
-  border-bottom: 1px solid #2a2a2a;
-  height: 36px;
+  flex: 1;
+  height: 100%;
   display: flex;
-  align-items: flex-end;
-  padding: 0 8px;
+  align-items: center;
+  -webkit-app-region: no-drag;
   overflow: hidden;
 }
 
 .tabs-container {
   display: flex;
-  align-items: flex-end;
-  height: 100%;
-  gap: 2px;
+  align-items: center;
+  height: 36px;
+  gap: 4px;
 }
 
 .tab {
@@ -20,10 +19,9 @@
   align-items: center;
   height: 32px;
   padding: 0 12px;
-  background: #0a0a0a;
-  border: 1px solid #2a2a2a;
-  border-bottom: none;
-  border-radius: 8px 8px 0 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   max-width: 200px;
@@ -33,25 +31,16 @@
 }
 
 .tab:hover {
-  background: #1a1a1a;
+  background: var(--bg-secondary);
+  border-color: var(--text-secondary);
 }
 
 .tab.active {
-  background: #0a0a0a;
-  border-color: #3a3a3a;
-  height: 33px;
-  z-index: 10;
+  background: var(--bg-secondary);
+  border-color: var(--text-primary);
+  box-shadow: 0 1px 3px var(--shadow-color);
 }
 
-.tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: #0a0a0a;
-}
 
 .tab-status {
   width: 6px;
@@ -62,7 +51,7 @@
 }
 
 .tab-status.idle {
-  background: #4a4a4a;
+  background: var(--text-secondary);
 }
 
 .tab-status.processing {
@@ -93,19 +82,21 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-  color: #9a9a9a;
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .tab.active .tab-title {
-  color: #e0e0e0;
+  color: var(--text-bright);
+  font-weight: 600;
 }
 
 .tab-close {
   margin-left: 8px;
   background: none;
   border: none;
-  color: #6a6a6a;
-  font-size: 18px;
+  color: var(--text-secondary);
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
   padding: 2px 4px;
@@ -120,17 +111,17 @@
 }
 
 .tab-close:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #e0e0e0;
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 
 .tab-add {
   height: 28px;
   width: 28px;
-  background: none;
-  border: 1px solid #2a2a2a;
-  border-radius: 6px 6px 0 0;
-  color: #6a6a6a;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
   font-size: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -141,7 +132,7 @@
 }
 
 .tab-add:hover {
-  background: #1a1a1a;
-  color: #9a9a9a;
-  border-color: #3a3a3a;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }

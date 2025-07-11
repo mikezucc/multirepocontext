@@ -124,7 +124,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
             )}
           </div>
           {isExpanded && node.children && (
-            <div className="tree-children">
+            <div className="tree-children" style={{ '--indent-level': level + 1 } as React.CSSProperties}>
               {node.children.map(child => renderNode(child, level + 1, nodePath))}
             </div>
           )}

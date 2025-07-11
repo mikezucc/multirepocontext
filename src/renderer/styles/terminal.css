@@ -18,7 +18,7 @@
 }
 
 body {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Courier Prime', monospace;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   overflow: hidden;
@@ -55,11 +55,11 @@ body::before {
   border-bottom: 2px solid var(--border-color);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 80px 0 24px;
+  padding: 0 16px;
   -webkit-app-region: drag;
   position: relative;
   box-shadow: 0 2px 8px var(--shadow-color);
+  gap: 16px;
 }
 
 .titlebar::after {
@@ -78,11 +78,13 @@ body::before {
 }
 
 .title {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-bright);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  flex-shrink: 0;
+  margin-right: 16px;
 }
 
 button {
@@ -240,9 +242,9 @@ button:active {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  width: 36px;
-  height: 36px;
-  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -253,6 +255,8 @@ button:active {
   z-index: 10;
   border-radius: 2px;
   box-shadow: 0 1px 3px var(--shadow-color);
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .settings-btn:hover {

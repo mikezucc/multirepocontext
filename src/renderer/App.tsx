@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import MasterDetail from './components/MasterDetail'
 import SettingsModal from './components/SettingsModal'
 import StatusBar from './components/StatusBar'
+import TabBar from './components/TabBar'
 import { Repository } from '@shared/types'
 
 declare global {
@@ -43,10 +44,25 @@ function App() {
     window.electronAPI.send('add-repository', {})
   }
 
+  const handleCloseRepo = (repo: Repository) => {
+    window.electronAPI.send('remove-repository', { id: repo.id })
+    if (selectedRepo?.id === repo.id) {
+      const remainingRepos = repositories.filter(r => r.id !== repo.id)
+      setSelectedRepo(remainingRepos.length > 0 ? remainingRepos[0] : null)
+    }
+  }
+
   return (
     <div className="app">
       <div className="titlebar">
         <div className="title">MDgent v0.1.0</div>
+        <TabBar
+          repositories={repositories}
+          selectedRepo={selectedRepo}
+          onSelectRepo={setSelectedRepo}
+          onCloseRepo={handleCloseRepo}
+          onAddRepo={handleAddRepository}
+        />
         <button className="settings-btn" onClick={() => setShowSettings(true)}>
           ⚙
         </button>

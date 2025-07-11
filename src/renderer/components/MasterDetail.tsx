@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import TabBar from './TabBar'
 import DocumentationViewer from './DocumentationViewer'
 import { Repository } from '@shared/types'
 import './MasterDetail.css'
@@ -19,24 +18,9 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
 }) => {
   const [documentation, setDocumentation] = useState<string>('')
 
-  const handleCloseRepo = (repo: Repository) => {
-    window.electronAPI.send('remove-repository', { id: repo.id })
-    if (selectedRepo?.id === repo.id) {
-      const remainingRepos = repositories.filter(r => r.id !== repo.id)
-      onSelectRepo(remainingRepos.length > 0 ? remainingRepos[0] : null)
-    }
-  }
-
   return (
     <div className="master-detail">
       <div className="master-pane">
-        <TabBar
-          repositories={repositories}
-          selectedRepo={selectedRepo}
-          onSelectRepo={onSelectRepo}
-          onCloseRepo={handleCloseRepo}
-          onAddRepo={onAddRepo}
-        />
         <div className="master-content">
           {repositories.length === 0 ? (
             <div className="empty-state">

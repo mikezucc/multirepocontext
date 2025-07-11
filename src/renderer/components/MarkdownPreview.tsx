@@ -135,10 +135,6 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
   return (
     <div className="markdown-preview">
       <div className="preview-header">
-        <div className="file-info">
-          <span className="file-icon">📄</span>
-          <span className="file-name">{fileName}</span>
-        </div>
         <div className="file-path">{filePath}</div>
       </div>
       <div className="preview-content">

@@ -120,7 +120,7 @@
 .tree-children::before {
   content: '';
   position: absolute;
-  left: 20px;
+  left: calc(var(--indent-level, 1) * 16px + 8px);
   top: 0;
   bottom: 0;
   width: 1px;
