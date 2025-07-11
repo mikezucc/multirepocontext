@@ -649,24 +649,53 @@ Format the response as markdown suitable for a README file.`
       const mcpConfigPath = path.join(mcpDir, 'mcp-config.json')
       await fs.writeFile(mcpConfigPath, configContent)
       
-      // Also create .mcp.json at repository root for Claude Code auto-detection
-      const rootMcpConfig = {
-        mcpServers: {
-          "mdgent-rag": {
-            command: "node",
-            args: [mcpServerPath],
-            env: {
-              MDGENT_SERVER_PORT: (serverPort || 3000).toString(),
-              MDGENT_REPOSITORY_ID: repositoryId,
-              MDGENT_REPOSITORY_PATH: repository.path
-            },
-            description: "MDgent RAG server for enhanced context retrieval"
-          }
-        }
+      // Check for existing .mcp.json and merge if it exists
+      const rootMcpPath = path.join(repository.path, '.mcp.json')
+      let rootMcpConfig: any = {
+        mcpServers: {}
       }
       
-      const rootMcpPath = path.join(repository.path, '.mcp.json')
+      // Try to read existing .mcp.json
+      try {
+        const existingConfig = await fs.readFile(rootMcpPath, 'utf-8')
+        rootMcpConfig = JSON.parse(existingConfig)
+        console.log('[DAEMON] Found existing .mcp.json, will merge MDgent server')
+        
+        // Ensure mcpServers object exists
+        if (!rootMcpConfig.mcpServers) {
+          rootMcpConfig.mcpServers = {}
+        }
+      } catch (error) {
+        console.log('[DAEMON] No existing .mcp.json found, creating new one')
+      }
+      
+      // Add MDgent server to the configuration
+      rootMcpConfig.mcpServers["mdgent-rag"] = {
+        command: "node",
+        args: [mcpServerPath],
+        env: {
+          MDGENT_SERVER_PORT: (serverPort || 3000).toString(),
+          MDGENT_REPOSITORY_ID: repositoryId,
+          MDGENT_REPOSITORY_PATH: repository.path
+        },
+        description: "MDgent RAG server for enhanced context retrieval"
+      }
+      
+      // Write the merged configuration
       await fs.writeFile(rootMcpPath, JSON.stringify(rootMcpConfig, null, 2))
+      
+      // Generate Cursor deeplink
+      const cursorConfig = {
+        command: "node",
+        args: [mcpServerPath],
+        env: {
+          MDGENT_SERVER_PORT: (serverPort || 3000).toString(),
+          MDGENT_REPOSITORY_ID: repositoryId,
+          MDGENT_REPOSITORY_PATH: repository.path
+        }
+      }
+      const encodedConfig = Buffer.from(JSON.stringify(cursorConfig)).toString('base64')
+      const cursorDeeplink = `cursor://anysphere.cursor-deeplink/mcp/install?name=mdgent-rag&config=${encodedConfig}`
       
       // Create .mdgentignore file if it doesn't exist
       const mdgentIgnorePath = path.join(repository.path, '.mdgentignore')
@@ -731,6 +760,15 @@ Claude Code will automatically detect and use the MCP server configuration when 
 2. Simply run \`claude\` in this directory or any subdirectory
 3. Claude Code will automatically load the MDgent RAG server
 4. You'll be prompted to approve the server on first use
+
+### Cursor IDE
+
+To install in Cursor:
+
+1. Click the "Install to Cursor" button in MDgent after setting up the MCP server
+2. Or use this deeplink: \`${cursorDeeplink}\`
+3. Cursor will prompt you to approve the MCP server installation
+4. Once approved, you can use the \`search_context\` tool in Cursor
 
 ### Claude Desktop (Manual Setup)
 
@@ -848,8 +886,8 @@ With MDgent's Claude integration, you get:
       
       console.log('[DAEMON] MCP server setup at:', mcpServerPath)
       console.log('[DAEMON] MCP config created at:', mcpConfigPath)
-      console.log('[DAEMON] Root .mcp.json created at:', rootMcpPath)
-      console.log('[DAEMON] CLAUDE.md created at:', claudeMdPath)
+      console.log('[DAEMON] Root .mcp.json updated at:', rootMcpPath)
+      console.log('[DAEMON] CLAUDE.md updated at:', path.join(repository.path, 'CLAUDE.md'))
       console.log('[DAEMON] Claude settings created at:', claudeSettingsPath)
       
       // Send success status back
@@ -859,8 +897,9 @@ With MDgent's Claude integration, you get:
         serverPath: mcpServerPath,
         configPath: mcpConfigPath,
         rootMcpPath,
-        claudeMdPath,
+        claudeMdPath: path.join(repository.path, 'CLAUDE.md'),
         claudeSettingsPath,
+        cursorDeeplink,
         message: 'MCP server and Claude Code environment configured successfully. Claude Code will auto-detect the .mcp.json configuration.'
       })
       

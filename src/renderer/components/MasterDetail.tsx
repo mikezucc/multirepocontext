@@ -20,6 +20,8 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
 }) => {
   const [documentation, setDocumentation] = useState<string>('')
   const [isRegeneratingEmbeddings, setIsRegeneratingEmbeddings] = useState(false)
+  const [cursorDeeplink, setCursorDeeplink] = useState<string | null>(null)
+  const [showMcpSuccess, setShowMcpSuccess] = useState(false)
 
   useEffect(() => {
     const handleAnalysisUpdate = (data: any) => {
@@ -34,12 +36,23 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
       }
     }
 
+    const handleMcpStatus = (data: any) => {
+      if (selectedRepo && data.repositoryId === selectedRepo.id && data.success) {
+        setCursorDeeplink(data.cursorDeeplink)
+        setShowMcpSuccess(true)
+        // Auto-hide success message after 10 seconds
+        setTimeout(() => setShowMcpSuccess(false), 10000)
+      }
+    }
+
     window.electronAPI.on('analysis-update', handleAnalysisUpdate)
     window.electronAPI.on('embeddings-status', handleEmbeddingsStatus)
+    window.electronAPI.on('mcp-status', handleMcpStatus)
 
     return () => {
       window.electronAPI.removeListener('analysis-update', handleAnalysisUpdate)
       window.electronAPI.removeListener('embeddings-status', handleEmbeddingsStatus)
+      window.electronAPI.removeListener('mcp-status', handleMcpStatus)
     }
   }, [selectedRepo])
 
@@ -93,6 +106,23 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
             >
               [⚙] Setup MCP Server
             </button>
+            
+            {showMcpSuccess && cursorDeeplink && (
+              <div style={{ marginTop: '12px', padding: '12px', background: '#2a3f5f', borderRadius: '4px', border: '1px solid #3a5f8f' }}>
+                <div style={{ marginBottom: '8px', color: '#4caf50' }}>✓ MCP Server Configured!</div>
+                <button 
+                  className="scan-btn"
+                  onClick={() => window.open(cursorDeeplink, '_blank')}
+                  style={{ marginTop: '4px', background: '#4a5568' }}
+                  title="Install MCP server in Cursor IDE"
+                >
+                  [↗] Install to Cursor
+                </button>
+                <div style={{ marginTop: '8px', fontSize: '0.8em', opacity: 0.8 }}>
+                  Or use Claude Code (auto-detected via .mcp.json)
+                </div>
+              </div>
+            )}
             <button 
               className="scan-btn"
               onClick={() => {
