@@ -136,11 +136,11 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
       <div key={nodePath} className="tree-node">
         <div
           className={`tree-item file ${node.isMdgent ? 'mdgent-file' : ''} ${isSelected ? 'selected' : ''}`}
-          style={{ paddingLeft: `${level * 16 + 20}px` }}
+          style={{ paddingLeft: `${level * 16}px` }}
           onClick={() => handleFileClick(node.path)}
         >
           <span className="file-icon">
-            {node.isMdgent ? '◈' : ''}
+            {node.isMdgent ? '>' : ''}
           </span>
           <span className="tree-name">{node.name}</span>
         </div>

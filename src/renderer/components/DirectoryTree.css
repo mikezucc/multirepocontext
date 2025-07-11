@@ -67,10 +67,13 @@
   font-size: 13px;
   color: var(--text-primary);
   transition: all 0.1s ease;
+  position: relative;
+  background: var(--bg-primary);
+  z-index: 1;
 }
 
 .tree-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--bg-secondary);
 }
 
 .tree-item.selected {
@@ -127,4 +130,5 @@
   width: 1px;
   background: var(--border-color);
   opacity: 0.3;
+  z-index: 0;
 }
