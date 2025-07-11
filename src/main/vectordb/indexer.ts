@@ -23,8 +23,8 @@ export class DocumentIndexer {
       // Chunk the document
       const chunks = await documentChunker.chunkDocument(content, filePath)
       
-      // Optimize chunks
-      const optimizedChunks = documentChunker.optimizeChunks(chunks)
+      // Optimize chunks - use larger sizes for better context
+      const optimizedChunks = documentChunker.optimizeChunks(chunks, 200, 2000)
       
       // Generate embeddings for chunks
       const chunkTexts = optimizedChunks.map(c => c.content)

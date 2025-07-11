@@ -395,7 +395,7 @@ Format the response as markdown suitable for a README file.`
     if (!repo) return
 
     const dir = path.dirname(filePath)
-    const docPath = path.join(dir, 'README.mdgent.md')
+    const docPath = path.join(dir, 'info.mdgent.md')
     
     // Read existing documentation if it exists
     let existingContent = ''
@@ -1166,17 +1166,24 @@ For additional configuration, see:
         }
       }
       
-      // Update status
-      this.updateRepoStatus(repositoryId, 'ready')
-      
-      console.log('[DAEMON] Embedding regeneration complete')
-      
-      this.sendMessage('embeddings-status', {
-        repositoryId,
-        success: true,
-        filesProcessed: mdgentFiles.length,
-        message: `Regenerated embeddings for ${mdgentFiles.length} files`
-      })
+      // Wait a moment for indexing to complete
+      // This is a simple approach - in production you'd want proper async tracking
+      setTimeout(() => {
+        // Update status
+        this.updateRepoStatus(repositoryId, 'ready')
+        
+        console.log('[DAEMON] Embedding regeneration complete')
+        
+        // Request vector stats to include in completion message
+        this.sendMessage('get-vector-stats', { repositoryId })
+        
+        this.sendMessage('embeddings-status', {
+          repositoryId,
+          success: true,
+          filesProcessed: mdgentFiles.length,
+          message: `Successfully regenerated embeddings for ${mdgentFiles.length} .mdgent.md files`
+        })
+      }, 2000) // Wait 2 seconds for indexing to complete
       
     } catch (error) {
       console.error('[DAEMON] Error regenerating embeddings:', error)

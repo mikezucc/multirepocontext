@@ -50,11 +50,17 @@ const StatusBar: React.FC<StatusBarProps> = ({ repositories }) => {
 
     const handleEmbeddingsStatus = (data: any) => {
       if (data.success) {
-        setCurrentActivity('')
-        addLog(data.message || `Successfully regenerated embeddings for ${data.filesProcessed} files`, 'info')
+        const completionMessage = data.message || `Successfully regenerated embeddings for ${data.filesProcessed} files`
+        setCurrentActivity(completionMessage)
+        addLog(completionMessage, 'info')
+        // Clear the activity message after 5 seconds
+        setTimeout(() => setCurrentActivity(''), 5000)
       } else {
-        setCurrentActivity('')
-        addLog(data.error || 'Failed to regenerate embeddings', 'error')
+        const errorMessage = data.error || 'Failed to regenerate embeddings'
+        setCurrentActivity(`Error: ${errorMessage}`)
+        addLog(errorMessage, 'error')
+        // Clear the activity message after 5 seconds
+        setTimeout(() => setCurrentActivity(''), 5000)
       }
     }
 
@@ -101,7 +107,11 @@ const StatusBar: React.FC<StatusBarProps> = ({ repositories }) => {
         </div>
         
         <div className="status-center">
-          {currentActivity && <span className="current-activity">{currentActivity}</span>}
+          {currentActivity && (
+            <span className={`current-activity ${currentActivity.includes('Successfully') ? 'success' : ''}`}>
+              {currentActivity}
+            </span>
+          )}
         </div>
         
         <div className="status-right">

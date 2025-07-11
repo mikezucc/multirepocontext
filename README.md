@@ -5,7 +5,7 @@ An AI-powered tribal knowledge documentation system that automatically generates
 ## Features
 
 - **AI-Powered Analysis**: Uses Anthropic's Claude API to understand code purpose and context
-- **Automatic Documentation**: Generates detailed README.mdgent.md files for code regions
+- **Automatic Documentation**: Generates detailed info.mdgent.md files for code regions
 - **Real-time Monitoring**: Watches for file changes and updates documentation incrementally
 - **Terminal Aesthetic**: Elegant retro terminal UI with master-detail layout
 - **Multi-Repository Support**: Manage documentation for multiple projects simultaneously

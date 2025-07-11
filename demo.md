@@ -31,7 +31,7 @@
    - × Error
 
 ### Generated Files
-- MDgent creates `README.mdgent.md` files in each directory
+- MDgent creates `info.mdgent.md` files in each directory
 - These files contain AI-generated documentation for the code
 - Files are updated automatically when code changes
 

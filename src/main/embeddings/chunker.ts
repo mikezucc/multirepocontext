@@ -32,32 +32,37 @@ export class DocumentChunker {
     // Process each token
     for (const token of tokens) {
       if (token.type === 'heading') {
-        // Save previous chunk if it has content
-        if (currentContent.length > 0) {
-          chunks.push({
-            content: currentContent.join('\n').trim(),
-            metadata: {
-              ...currentMetadata,
-              startLine: chunkStartLine,
-              endLine: lineNumber - 1
-            }
-          })
-          currentContent = []
+        // Only create new chunk for primary headers (depth 1)
+        if (token.depth === 1) {
+          // Save previous chunk if it has content
+          if (currentContent.length > 0) {
+            chunks.push({
+              content: currentContent.join('\n').trim(),
+              metadata: {
+                ...currentMetadata,
+                startLine: chunkStartLine,
+                endLine: lineNumber - 1
+              }
+            })
+            currentContent = []
+          }
+
+          // Start new chunk
+          chunkStartLine = lineNumber
         }
 
         // Update header hierarchy
         const level = token.depth
         currentHeaders = currentHeaders.slice(0, level - 1)
         currentHeaders[level - 1] = token.text
-
-        // Start new chunk
-        chunkStartLine = lineNumber
+        
+        // Update metadata with current header hierarchy
         currentMetadata = {
           headers: [...currentHeaders],
           chunkType: 'header'
         }
         
-        // Add header to current content
+        // Always add header to current content (whether primary or not)
         currentContent.push(token.raw)
         lineNumber += token.raw.split('\n').length
         

@@ -65,6 +65,12 @@
   font-style: italic;
 }
 
+.current-activity.success {
+  color: #4CAF50;
+  font-style: normal;
+  font-weight: 500;
+}
+
 .status-right {
   display: flex;
   align-items: center;
