@@ -26,9 +26,11 @@ class MDgentDaemon {
   private batchSize = 10 // Process files in batches
   private watchDepth = 3 // Maximum directory depth to watch
   private gitignores: Map<string, any> = new Map()
+  private customPrompt: string | null = null
 
   constructor() {
     this.setupIpc()
+    this.loadPromptConfig()
   }
 
   private setupIpc() {
@@ -76,6 +78,12 @@ class MDgentDaemon {
         break
       case 'regenerate-embeddings':
         await this.regenerateEmbeddings(message.data)
+        break
+      case 'get-prompt-config':
+        await this.getPromptConfig()
+        break
+      case 'save-prompt-config':
+        await this.savePromptConfig(message.data)
         break
     }
   }
@@ -546,7 +554,8 @@ out
       
       // Generate documentation if Anthropic client is available
       if (this.anthropic && !filePath.endsWith('.mdgent.md')) {
-        const prompt = `You are a technical Product Manager who is compiling the tribal knowledge of the codebase. Analyze this code file and generate comprehensive documentation that serves to both describe the product and design considerations, as well as the detaield technical specifications.
+        // Use custom prompt if available, otherwise use default
+        const defaultPrompt = `You are a technical Product Manager who is compiling the tribal knowledge of the codebase. Analyze this code file and generate comprehensive documentation that serves to both describe the product and design considerations, as well as the detaield technical specifications.
 
 File: ${relativePath}
 
@@ -562,6 +571,11 @@ Please provide:
 5. Any important implementation details or design decisions
 
 Format the response as markdown suitable for a README file.`
+
+        // Replace placeholders in custom prompt
+        let prompt = this.customPrompt || defaultPrompt
+        prompt = prompt.replace(/{relativePath}/g, relativePath)
+        prompt = prompt.replace(/{content}/g, content)
 
         // Count input tokens
         const inputTokens = countTokens(prompt)
@@ -1489,6 +1503,66 @@ This repository is enhanced with MDgent's semantic search capabilities:
         repositoryId,
         success: false,
         error: error instanceof Error ? error.message : 'Failed to regenerate embeddings'
+      })
+    }
+  }
+
+  private async loadPromptConfig() {
+    try {
+      const configPath = path.join(process.env.HOME || '', '.mdgent', 'prompt-config.json')
+      const configData = await fs.readFile(configPath, 'utf-8')
+      const config = JSON.parse(configData)
+      this.customPrompt = config.prompt || null
+      console.log('[DAEMON] Loaded custom prompt configuration')
+    } catch (error) {
+      console.log('[DAEMON] No custom prompt configuration found, using default')
+    }
+  }
+
+  private async getPromptConfig() {
+    const defaultPrompt = `You are a technical Product Manager who is compiling the tribal knowledge of the codebase. Analyze this code file and generate comprehensive documentation that serves to both describe the product and design considerations, as well as the detaield technical specifications.
+
+File: {relativePath}
+
+\`\`\`
+{content}
+\`\`\`
+
+Please provide:
+1. A clear description of the file's purpose and role in the codebase
+2. List of all public interfaces, classes, and functions with their signatures
+3. Dependencies and imports that other parts of the codebase might need
+4. Usage examples if applicable
+5. Any important implementation details or design decisions
+
+Format the response as markdown suitable for a README file.`
+
+    this.sendMessage('prompt-config', {
+      prompt: this.customPrompt || defaultPrompt
+    })
+  }
+
+  private async savePromptConfig(data: { prompt: string }) {
+    try {
+      const configDir = path.join(process.env.HOME || '', '.mdgent')
+      const configPath = path.join(configDir, 'prompt-config.json')
+      
+      // Ensure config directory exists
+      await fs.mkdir(configDir, { recursive: true })
+      
+      // Save the prompt configuration
+      await fs.writeFile(configPath, JSON.stringify({ prompt: data.prompt }, null, 2))
+      
+      // Update the current prompt
+      this.customPrompt = data.prompt
+      
+      console.log('[DAEMON] Saved custom prompt configuration')
+      this.sendMessage('prompt-config-saved', { success: true })
+    } catch (error) {
+      console.error('[DAEMON] Error saving prompt configuration:', error)
+      this.sendMessage('prompt-config-saved', { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to save prompt configuration'
       })
     }
   }

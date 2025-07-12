@@ -5,6 +5,7 @@ import StatusBar from './components/StatusBar'
 import TabBar from './components/TabBar'
 import TokenUsageMeter from './components/TokenUsageMeter'
 import { PromptDebugger } from './components/PromptDebugger'
+import { ConfigView } from './components/ConfigView'
 import { Repository } from '@shared/types'
 
 declare global {
@@ -21,7 +22,7 @@ function App() {
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [currentView, setCurrentView] = useState<'files' | 'debug'>('files')
+  const [currentView, setCurrentView] = useState<'files' | 'debug' | 'config'>('files')
 
   useEffect(() => {
     window.electronAPI.send('get-repositories', null)
@@ -109,6 +110,24 @@ function App() {
           >
             Debug
           </button>
+          <button 
+            className={`view-btn ${currentView === 'config' ? 'active' : ''}`}
+            onClick={() => setCurrentView('config')}
+            style={{
+              padding: '4px 12px',
+              background: currentView === 'config' ? 'var(--text-primary)' : 'var(--bg-secondary)',
+              color: currentView === 'config' ? 'var(--bg-primary)' : 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontFamily: 'inherit',
+              WebkitAppRegion: 'no-drag' as any,
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Config
+          </button>
         </div>
         <TokenUsageMeter />
         <button className="settings-btn" onClick={() => setShowSettings(true)}>
@@ -122,8 +141,13 @@ function App() {
           onSelectRepo={setSelectedRepo}
           onAddRepo={handleAddRepository}
         />
-      ) : (
+      ) : currentView === 'debug' ? (
         <PromptDebugger
+          repositoryId={selectedRepo?.id || null}
+          repositoryName={selectedRepo?.name}
+        />
+      ) : (
+        <ConfigView
           repositoryId={selectedRepo?.id || null}
           repositoryName={selectedRepo?.name}
         />

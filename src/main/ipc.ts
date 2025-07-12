@@ -267,6 +267,34 @@ export class IpcHandler {
         })
       }
     })
+
+    ipcMain.on('get-prompt-config', async (event, data) => {
+      try {
+        // Send current prompt configuration to the daemon
+        if (this.daemon) {
+          this.daemon.send({ type: 'get-prompt-config', data: {} })
+        }
+      } catch (error) {
+        console.error('IPC: Error getting prompt config:', error)
+        event.reply('prompt-config', { error: error instanceof Error ? error.message : 'Failed to get prompt config' })
+      }
+    })
+
+    ipcMain.on('save-prompt-config', async (event, data) => {
+      try {
+        // Send new prompt configuration to the daemon
+        if (this.daemon) {
+          this.daemon.send({ type: 'save-prompt-config', data: { prompt: data.prompt } })
+        }
+        event.reply('prompt-config-saved', { success: true })
+      } catch (error) {
+        console.error('IPC: Error saving prompt config:', error)
+        event.reply('prompt-config-saved', { 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Failed to save prompt config' 
+        })
+      }
+    })
   }
 
   private startDaemon() {
@@ -410,6 +438,14 @@ export class IpcHandler {
         
       case 'track-token-usage':
         this.handleTokenUsage(message.data)
+        break
+      
+      case 'prompt-config':
+        this.sendToRenderer('prompt-config', message.data)
+        break
+      
+      case 'prompt-config-saved':
+        this.sendToRenderer('prompt-config-saved', message.data)
         break
     }
   }
