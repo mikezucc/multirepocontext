@@ -31,6 +31,7 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
     }
 
     const handleEmbeddingsStatus = (data: any) => {
+      console.log('Received embeddings-status:', data)
       if (selectedRepo && data.repositoryId === selectedRepo.id) {
         setIsRegeneratingEmbeddings(false)
       }
@@ -107,7 +108,7 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
               [⚙] Setup MCP Server
             </button>
             
-            {showMcpSuccess && cursorDeeplink && (
+            {cursorDeeplink && (
               <div style={{ marginTop: '12px', padding: '12px', background: '#2a3f5f', borderRadius: '4px', border: '1px solid #3a5f8f' }}>
                 <div style={{ marginBottom: '8px', color: '#4caf50' }}>✓ MCP Server Configured!</div>
                 <button 
@@ -141,10 +142,10 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
             {selectedRepo.vectorStats && (
               <div className="vector-stats" style={{ marginTop: '16px', fontSize: '0.85em', opacity: 0.8 }}>
                 <div>Vector Database Stats:</div>
-                <div>• Documents: {selectedRepo.vectorStats.documentCount}</div>
-                <div>• Chunks: {selectedRepo.vectorStats.chunkCount}</div>
-                {selectedRepo.vectorStats.lastIndexed && (
-                  <div>• Last indexed: {new Date(selectedRepo.vectorStats.lastIndexed).toLocaleString()}</div>
+                <div>• Documents: {selectedRepo.vectorStats.indexedFiles.length}</div>
+                <div>• Chunks: {selectedRepo.vectorStats.totalChunks}</div>
+                {selectedRepo.vectorStats.lastUpdated && (
+                  <div>• Last indexed: {new Date(selectedRepo.vectorStats.lastUpdated).toLocaleString()}</div>
                 )}
               </div>
             )}

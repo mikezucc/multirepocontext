@@ -80,7 +80,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ repositories }) => {
   }, [])
 
   const addLog = (message: string, type: DaemonLog['type'] = 'info') => {
-    setLogs(prev => [...prev.slice(-99), { timestamp: new Date(), message, type }])
+    setLogs(prev => [...prev, { timestamp: new Date(), message, type }])
   }
 
   const activeRepos = repositories.filter(r => r.status === 'analyzing' || r.status === 'scanning').length

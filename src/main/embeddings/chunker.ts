@@ -161,7 +161,7 @@ export class DocumentChunker {
   }
 
   // Main chunking method that handles different file types
-  async chunkDocument(content: string, filePath: string): Promise<DocumentChunk[]> {
+  async chunkDocument(content: string, filePath: string): Promise<DocumentChunk[] | undefined> {
     const extension = filePath.split('.').pop()?.toLowerCase()
     
     // Handle markdown files
@@ -169,7 +169,7 @@ export class DocumentChunker {
       return this.chunkMarkdown(content, filePath)
     }
     
-    throw new Error(`CHUNKING NON-MARKDOWN FILE: file extension for chunking: ${extension}`)
+    // throw new Error(`CHUNKING NON-MARKDOWN FILE: file extension for chunking: ${extension}`)
     
     // // Handle code files
     // const codeExtensions: Record<string, string> = {

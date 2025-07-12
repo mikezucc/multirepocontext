@@ -896,14 +896,14 @@ With MDgent's Claude integration, you get:
         }
       }
       
-      const claudeSettingsPath = path.join(claudeDir, 'settings.json')
-      await fs.writeFile(claudeSettingsPath, JSON.stringify(claudeSettings, null, 2))
+      // const claudeSettingsPath = path.join(claudeDir, 'settings.json')
+      // await fs.writeFile(claudeSettingsPath, JSON.stringify(claudeSettings, null, 2))
       
       console.log('[DAEMON] MCP server setup at:', mcpServerPath)
       console.log('[DAEMON] MCP config created at:', mcpConfigPath)
       console.log('[DAEMON] Root .mcp.json updated at:', rootMcpPath)
       console.log('[DAEMON] CLAUDE.md updated at:', path.join(repository.path, 'CLAUDE.md'))
-      console.log('[DAEMON] Claude settings created at:', claudeSettingsPath)
+      // console.log('[DAEMON] Claude settings created at:', claudeSettingsPath)
       
       // Send success status back
       this.sendMessage('mcp-status', {
@@ -913,7 +913,7 @@ With MDgent's Claude integration, you get:
         configPath: mcpConfigPath,
         rootMcpPath,
         claudeMdPath: path.join(repository.path, 'CLAUDE.md'),
-        claudeSettingsPath,
+        // claudeSettingsPath,
         cursorDeeplink,
         message: 'MCP server and Claude Code environment configured successfully. Claude Code will auto-detect the .mcp.json configuration.'
       })

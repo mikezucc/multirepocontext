@@ -58,10 +58,6 @@ const TokenUsageMeter: React.FC = () => {
     }
   }, [showDetails])
 
-  const totalTokensToday = 
-    tokenUsage.today.mcp.input + tokenUsage.today.mcp.output +
-    tokenUsage.today.anthropic.input + tokenUsage.today.anthropic.output
-
   const totalTokensAllTime = 
     tokenUsage.total.mcp.input + tokenUsage.total.mcp.output +
     tokenUsage.total.anthropic.input + tokenUsage.total.anthropic.output
@@ -75,7 +71,7 @@ const TokenUsageMeter: React.FC = () => {
       >
         <span className="token-icon">🪙</span>
         <span className="token-count">
-          {formatTokenCount(totalTokensToday)} / {formatTokenCount(totalTokensAllTime)}
+          {formatTokenCount(totalTokensAllTime)}
         </span>
         <span className="expand-icon">{showDetails ? '▼' : '▶'}</span>
       </div>

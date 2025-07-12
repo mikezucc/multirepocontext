@@ -22,6 +22,11 @@ export class DocumentIndexer {
       
       // Chunk the document
       const chunks = await documentChunker.chunkDocument(content, filePath)
+
+      if (!chunks || chunks.length === 0) {
+        console.log('[Indexer] No chunks generated for:', filePath)
+        return
+      }
       
       // Optimize chunks - use larger sizes for better context
       const optimizedChunks = documentChunker.optimizeChunks(chunks, 200, 2000)
