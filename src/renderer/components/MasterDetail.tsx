@@ -23,6 +23,25 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
   const [cursorDeeplink, setCursorDeeplink] = useState<string | null>(null)
   const [showMcpSuccess, setShowMcpSuccess] = useState(false)
 
+  // Generate Cursor deeplink for the current repository
+  const generateCursorDeeplink = (repo: Repository) => {
+    const serverPort = 3000 // Default port
+    const mcpServerPath = `${repo.path}/.mdgent/mcp/mdgent-mcp-server.js`
+    
+    const cursorConfig = {
+      command: "node",
+      args: [mcpServerPath],
+      env: {
+        MDGENT_SERVER_PORT: serverPort.toString(),
+        MDGENT_REPOSITORY_ID: repo.id,
+        MDGENT_REPOSITORY_PATH: repo.path
+      }
+    }
+    
+    const encodedConfig = btoa(JSON.stringify(cursorConfig))
+    return `cursor://anysphere.cursor-deeplink/mcp/install?name=mdgent-rag&config=${encodedConfig}`
+  }
+
   useEffect(() => {
     const handleAnalysisUpdate = (data: any) => {
       if (selectedRepo && data.repositoryId === selectedRepo.id) {
@@ -108,19 +127,20 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
               [⚙] Setup MCP Server
             </button>
             
-            {cursorDeeplink && (
-              <div style={{ marginTop: '12px', padding: '12px', background: '#2a3f5f', borderRadius: '4px', border: '1px solid #3a5f8f' }}>
-                <div style={{ marginBottom: '8px', color: '#4caf50' }}>✓ MCP Server Configured!</div>
-                <button 
-                  className="scan-btn"
-                  onClick={() => window.open(cursorDeeplink, '_blank')}
-                  style={{ marginTop: '4px', background: '#4a5568' }}
-                  title="Install MCP server in Cursor IDE"
-                >
-                  [↗] Install to Cursor
-                </button>
-                <div style={{ marginTop: '8px', fontSize: '0.8em', opacity: 0.8 }}>
-                  Or use Claude Code (auto-detected via .mcp.json)
+            <button 
+              className="scan-btn"
+              onClick={() => window.open(generateCursorDeeplink(selectedRepo), '_blank')}
+              style={{ marginTop: '8px' }}
+              title="Install MCP server in Cursor IDE"
+            >
+              [↗] Install to Cursor
+            </button>
+            
+            {showMcpSuccess && (
+              <div style={{ marginTop: '8px', padding: '8px', background: '#2a3f5f', borderRadius: '4px', border: '1px solid #3a5f8f' }}>
+                <div style={{ color: '#4caf50', fontSize: '0.9em' }}>✓ MCP Server Configured!</div>
+                <div style={{ marginTop: '4px', fontSize: '0.8em', opacity: 0.8 }}>
+                  Use Claude Code (auto-detected via .mcp.json)
                 </div>
               </div>
             )}
