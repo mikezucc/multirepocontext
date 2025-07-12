@@ -161,9 +161,10 @@ out
         }
         
         // Additional hard-coded ignores
-        const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.mdgent']
+        const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.mdgent', '.DS_Store']
         const parts = relativePath.split(path.sep)
-        return parts.some(part => hardIgnores.includes(part))
+        const fileName = path.basename(filePath)
+        return parts.some(part => hardIgnores.includes(part)) || fileName === '.DS_Store'
       },
       persistent: true,
       ignoreInitial: true,
