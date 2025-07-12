@@ -23,6 +23,23 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
+.token-summary.updating {
+  animation: pulse 0.3s ease-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+    background: rgba(76, 195, 247, 0.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .token-icon {
   font-size: 1.1em;
   line-height: 1;

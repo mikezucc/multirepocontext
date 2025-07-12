@@ -69,7 +69,7 @@ const TokenUsageMeter: React.FC = () => {
   return (
     <div className="token-usage-meter" ref={meterRef}>
       <div 
-        className="token-summary"
+        className={`token-summary ${isUpdating ? 'updating' : ''}`}
         onClick={() => setShowDetails(!showDetails)}
         title="Click to see detailed token usage"
       >

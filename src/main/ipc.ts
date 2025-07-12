@@ -182,6 +182,7 @@ export class IpcHandler {
     
     ipcMain.on('get-token-usage', async (event) => {
       try {
+        const { vectorDB } = await import('./vectordb/database')
         const stats = await vectorDB.getTokenUsageStats()
         event.reply('token-usage-update', stats)
       } catch (error) {
@@ -494,6 +495,8 @@ export class IpcHandler {
   private async handleTokenUsage(data: { source: 'mcp_server' | 'anthropic_api'; input: number; output: number }) {
     try {
       const { source, input, output } = data
+
+      const { vectorDB } = await import('./vectordb/database')
       
       // Track input tokens
       if (input > 0) {
