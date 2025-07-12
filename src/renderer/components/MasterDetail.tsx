@@ -137,7 +137,7 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
             </button>
             
             {showMcpSuccess && (
-              <div style={{ marginTop: '8px', padding: '8px', background: '#2a3f5f', borderRadius: '4px', border: '1px solid #3a5f8f' }}>
+              <div style={{ marginTop: '8px', padding: '8px', borderRadius: '4px', border: '1px solid #3a5f8f' }}>
                 <div style={{ color: '#4caf50', fontSize: '0.9em' }}>✓ MCP Server Configured!</div>
                 <div style={{ marginTop: '4px', fontSize: '0.8em', opacity: 0.8 }}>
                   Use Claude Code (auto-detected via .mcp.json)

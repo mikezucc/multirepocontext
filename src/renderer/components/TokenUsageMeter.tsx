@@ -73,7 +73,6 @@ const TokenUsageMeter: React.FC = () => {
         <span className="token-count">
           {formatTokenCount(totalTokensAllTime)}
         </span>
-        <span className="expand-icon">{showDetails ? '▼' : '▶'}</span>
       </div>
 
       {showDetails && (

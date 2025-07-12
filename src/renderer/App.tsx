@@ -24,11 +24,21 @@ function App() {
   const [showSettings, setShowSettings] = useState(false)
   const [currentView, setCurrentView] = useState<'files' | 'debug' | 'config'>('files')
 
+  const handleSelectRepo = (repo: Repository) => {
+    setSelectedRepo(repo)
+    // Update last opened timestamp
+    window.electronAPI.send('update-repository-opened', { id: repo.id })
+  }
+
   useEffect(() => {
     window.electronAPI.send('get-repositories', null)
 
     const handleRepoStatus = (repos: Repository[]) => {
       setRepositories(repos)
+      // Auto-select first repository if none selected and repos exist
+      if (!selectedRepo && repos.length > 0) {
+        handleSelectRepo(repos[0])
+      }
     }
 
     const handleRepoRemoved = (data: { id: string }) => {
@@ -63,7 +73,7 @@ function App() {
         <TabBar
           repositories={repositories}
           selectedRepo={selectedRepo}
-          onSelectRepo={setSelectedRepo}
+          onSelectRepo={handleSelectRepo}
           onCloseRepo={handleCloseRepo}
           onAddRepo={handleAddRepository}
         />
@@ -138,7 +148,7 @@ function App() {
         <MasterDetail
           repositories={repositories}
           selectedRepo={selectedRepo}
-          onSelectRepo={setSelectedRepo}
+          onSelectRepo={handleSelectRepo}
           onAddRepo={handleAddRepository}
         />
       ) : currentView === 'debug' ? (

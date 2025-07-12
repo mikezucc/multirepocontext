@@ -5,6 +5,7 @@ import * as fs from 'fs'
 import { createHash } from 'crypto'
 import { Repository } from '../shared/types'
 import { documentIndexer } from './vectordb/indexer'
+import { repositoryStore } from './database/repositoryStore'
 
 export class IpcHandler {
   private daemon: ChildProcess | null = null
@@ -15,6 +16,7 @@ export class IpcHandler {
   constructor() {
     this.setupHandlers()
     this.startDaemon()
+    this.loadStoredRepositories()
   }
 
   setMainWindow(window: Electron.BrowserWindow) {
@@ -65,6 +67,13 @@ export class IpcHandler {
 
         this.repositories.set(repository.id, repository)
         
+        // Save to persistent store
+        try {
+          repositoryStore.addRepository(repository.id, repository.name, repository.path)
+        } catch (error) {
+          console.error('Failed to save repository to store:', error)
+        }
+        
         // Send updated repository list
         this.sendToRenderer('repository-status', Array.from(this.repositories.values()))
         
@@ -76,6 +85,14 @@ export class IpcHandler {
     ipcMain.on('remove-repository', (event, data) => {
       const { id } = data
       this.repositories.delete(id)
+      
+      // Remove from persistent store
+      try {
+        repositoryStore.removeRepository(id)
+      } catch (error) {
+        console.error('Failed to remove repository from store:', error)
+      }
+      
       this.sendToDaemon('remove-repository', { id })
       this.sendToRenderer('repository-removed', { id })
     })
@@ -295,6 +312,15 @@ export class IpcHandler {
         })
       }
     })
+
+    ipcMain.on('update-repository-opened', (event, data) => {
+      const { id } = data
+      try {
+        repositoryStore.updateLastOpened(id)
+      } catch (error) {
+        console.error('IPC: Error updating repository last opened:', error)
+      }
+    })
   }
 
   private startDaemon() {
@@ -495,6 +521,44 @@ export class IpcHandler {
   cleanup() {
     if (this.daemon && !this.daemon.killed) {
       this.daemon.kill()
+    }
+  }
+
+  private async loadStoredRepositories() {
+    try {
+      // Wait a bit for the daemon to be ready
+      setTimeout(() => {
+        const storedRepos = repositoryStore.getAllRepositories()
+        
+        for (const stored of storedRepos) {
+          // Verify the repository still exists on disk
+          if (fs.existsSync(stored.path)) {
+            const repository: Repository = {
+              id: stored.id,
+              path: stored.path,
+              name: stored.name,
+              status: 'idle',
+              lastUpdated: new Date(stored.last_opened)
+            }
+            
+            this.repositories.set(repository.id, repository)
+            
+            // Send to daemon
+            this.sendToDaemon('add-repository', repository)
+          } else {
+            // Remove from store if path no longer exists
+            console.log(`Repository path no longer exists, removing: ${stored.path}`)
+            repositoryStore.removeRepository(stored.id)
+          }
+        }
+        
+        // Send updated repository list to renderer once window is ready
+        if (this.mainWindow) {
+          this.sendToRenderer('repository-status', Array.from(this.repositories.values()))
+        }
+      }, 1000)
+    } catch (error) {
+      console.error('Failed to load stored repositories:', error)
     }
   }
 
