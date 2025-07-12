@@ -99,6 +99,9 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ filePath, content, onSa
     const nextMatch = (currentMatch + 1) % totalMatches
     setCurrentMatch(nextMatch)
     highlightMatch(nextMatch)
+    // Refocus the search input to maintain highlighting
+    const searchInput = document.querySelector('.editor-search-input') as HTMLInputElement
+    if (searchInput) searchInput.focus()
   }
 
   const findPrevious = () => {
@@ -106,6 +109,9 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ filePath, content, onSa
     const prevMatch = currentMatch === 0 ? totalMatches - 1 : currentMatch - 1
     setCurrentMatch(prevMatch)
     highlightMatch(prevMatch)
+    // Refocus the search input to maintain highlighting
+    const searchInput = document.querySelector('.editor-search-input') as HTMLInputElement
+    if (searchInput) searchInput.focus()
   }
 
   const replaceOne = () => {

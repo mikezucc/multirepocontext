@@ -64,6 +64,10 @@ class MDgentDaemon {
       case 'analyze-repository':
         await this.analyzeRepository(message.data.id)
         break
+      
+      case 'analyze-directory':
+        await this.analyzeDirectory(message.data)
+        break
       case 'get-directory-tree':
         await this.getDirectoryTree(message.data.id)
         break
@@ -271,6 +275,92 @@ out
     }
   }
 
+  private async analyzeDirectory(data: { repositoryId: string; directoryPath: string; repository: Repository }) {
+    const { repositoryId, directoryPath, repository } = data
+    
+    if (!this.anthropic) {
+      console.log('[DAEMON] Cannot analyze - Anthropic client not initialized (missing API key?)')
+      this.sendMessage('analysis-progress', {
+        repositoryId,
+        currentFile: directoryPath,
+        progress: 100,
+        totalFiles: 0,
+        processedFiles: 0,
+        tokensUsed: 0,
+        estimatedCost: 0,
+        error: 'API key not configured'
+      })
+      return
+    }
+
+    console.log('[DAEMON] Starting directory analysis:', directoryPath)
+    
+    try {
+      // Scan only the specified directory recursively
+      const files = await this.scanDirectory(directoryPath)
+      const totalFiles = files.length
+      console.log('[DAEMON] Found', totalFiles, 'files to analyze in directory:', directoryPath)
+
+      if (totalFiles === 0) {
+        this.sendMessage('analysis-progress', {
+          repositoryId,
+          currentFile: directoryPath,
+          progress: 100,
+          totalFiles: 0,
+          processedFiles: 0,
+          tokensUsed: 0,
+          estimatedCost: 0
+        })
+        return
+      }
+      
+      // Process files in batches
+      for (let i = 0; i < files.length; i += this.batchSize) {
+        const batch = files.slice(i, i + this.batchSize)
+        
+        await Promise.all(
+          batch.map(async (file, batchIndex) => {
+            const fileIndex = i + batchIndex
+            const progress: AnalysisProgress = {
+              repositoryId,
+              currentFile: file,
+              progress: ((fileIndex + 1) / totalFiles) * 100,
+              totalFiles,
+              processedFiles: fileIndex + 1,
+              tokensUsed: 0,
+              estimatedCost: 0
+            }
+            
+            this.sendMessage('analysis-progress', progress)
+            
+            console.log('[DAEMON] Analyzing file', fileIndex + 1, 'of', totalFiles, ':', file)
+            await this.analyzeFile(repositoryId, file)
+          })
+        )
+        
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
+      // Regenerate embeddings for the processed files
+      console.log('[DAEMON] Directory analysis complete, regenerating embeddings...')
+      await this.regenerateEmbeddingsForDirectory(repositoryId, directoryPath)
+      
+    } catch (error) {
+      console.error('[DAEMON] Error analyzing directory:', error)
+      this.sendMessage('analysis-progress', {
+        repositoryId,
+        currentFile: directoryPath,
+        progress: 100,
+        totalFiles: 0,
+        processedFiles: 0,
+        tokensUsed: 0,
+        estimatedCost: 0,
+        error: error.message
+      })
+    }
+  }
+
   private async scanRepository(repoPath: string): Promise<string[]> {
     const files: string[] = []
     // Only scan for .mdgent.md files for embeddings
@@ -320,6 +410,113 @@ out
     await scan(repoPath)
     console.log('[DAEMON] Scan complete. Found', files.length, 'files matching criteria')
     return files
+  }
+
+  private async scanDirectory(dirPath: string): Promise<string[]> {
+    const files: string[] = []
+    const maxFiles = 1000 // Limit total files to prevent memory issues
+    
+    const scan = async (dir: string): Promise<void> => {
+      if (files.length >= maxFiles) return
+      
+      try {
+        const entries = await fs.readdir(dir, { withFileTypes: true })
+        
+        for (const entry of entries) {
+          if (files.length >= maxFiles) break
+          
+          const fullPath = path.join(dir, entry.name)
+          
+          // Skip hidden files/folders except .gitignore
+          if (entry.name.startsWith('.') && entry.name !== '.gitignore') {
+            continue
+          }
+          
+          if (entry.isDirectory()) {
+            const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.cache', 'coverage', '.mdgent']
+            if (!hardIgnores.includes(entry.name)) {
+              await scan(fullPath)
+            }
+          } else if (entry.isFile()) {
+            // Include all code files for documentation generation
+            const ext = path.extname(entry.name).toLowerCase()
+            const codeExtensions = ['.js', '.jsx', '.ts', '.tsx', '.py', '.java', '.go', '.rs', '.cpp', '.c', '.h', '.cs', '.rb', '.php', '.swift', '.kt', '.scala', '.r', '.m', '.mm']
+            if (codeExtensions.includes(ext) && !entry.name.endsWith('.mdgent.md')) {
+              files.push(fullPath)
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error scanning directory ${dir}:`, error)
+      }
+    }
+    
+    await scan(dirPath)
+    console.log('[DAEMON] Directory scan complete. Found', files.length, 'files')
+    return files
+  }
+
+  private async regenerateEmbeddingsForDirectory(repositoryId: string, directoryPath: string) {
+    try {
+      // Find all .mdgent.md files in the directory
+      const mdgentFiles: string[] = []
+      
+      const findMdgentFiles = async (dir: string): Promise<void> => {
+        try {
+          const entries = await fs.readdir(dir, { withFileTypes: true })
+          
+          for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name)
+            
+            if (entry.isDirectory()) {
+              // Skip common directories
+              const skipDirs = ['node_modules', '.git', 'dist', 'build', 'out', '.next']
+              if (!skipDirs.includes(entry.name) && !entry.name.startsWith('.')) {
+                await findMdgentFiles(fullPath)
+              }
+            } else if (entry.isFile() && entry.name.endsWith('.mdgent.md')) {
+              mdgentFiles.push(fullPath)
+            }
+          }
+        } catch (error) {
+          console.error('[DAEMON] Error scanning for mdgent files:', dir, error)
+        }
+      }
+      
+      await findMdgentFiles(directoryPath)
+      
+      console.log(`[DAEMON] Found ${mdgentFiles.length} .mdgent.md files to index in directory`)
+      
+      // Send files for indexing
+      for (const file of mdgentFiles) {
+        try {
+          const content = await fs.readFile(file, 'utf-8')
+          this.sendMessage('index-file', {
+            repositoryId,
+            filePath: file,
+            content
+          })
+        } catch (error) {
+          console.error('[DAEMON] Error reading file for indexing:', file, error)
+        }
+      }
+      
+      // Send completion message
+      this.sendMessage('embeddings-status', {
+        repositoryId,
+        success: true,
+        filesProcessed: mdgentFiles.length,
+        message: `Successfully indexed ${mdgentFiles.length} files from ${path.basename(directoryPath)}`
+      })
+      
+    } catch (error) {
+      console.error('[DAEMON] Error regenerating embeddings for directory:', error)
+      this.sendMessage('embeddings-status', {
+        repositoryId,
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to regenerate embeddings'
+      })
+    }
   }
 
   private async analyzeFile(repoId: string, filePath: string) {

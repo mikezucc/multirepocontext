@@ -5,6 +5,7 @@
   background: var(--bg-primary);
   border-right: 1px solid var(--border-color);
   padding-left: 8px;
+  font-family: 'Golos Text', monospace;
 }
 
 /* Search functionality */
@@ -147,11 +148,9 @@
 
 .tree-time {
   margin-left: auto;
-  padding-left: 8px;
-  font-size: 11px;
+  padding-left: 4px;
   color: var(--text-secondary);
   opacity: 0.7;
-  font-family: monospace;
   white-space: nowrap;
 }
 
@@ -166,8 +165,50 @@
 
 .has-mdgent {
   margin-left: 8px;
-  font-size: 8px;
   color: #4CAF50;
+}
+
+.process-dir-btn {
+  margin-left: 2px;
+  margin-right: 0px;
+  padding: 2px 8px;
+  background: rgba(76, 175, 80, 0.2);
+  border: 1px solid rgba(76, 175, 80, 0.4);
+  border-radius: 3px;
+  color: #4caf50;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+.tree-item:hover .process-dir-btn {
+  opacity: 1;
+}
+
+.process-dir-btn:hover {
+  background: rgba(76, 175, 80, 0.3);
+  border-color: rgba(76, 175, 80, 0.6);
+}
+
+.process-dir-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.process-dir-btn.processing {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .mdgent-file .file-icon {
@@ -177,6 +218,7 @@
 .mdgent-file .tree-name {
   font-weight: 500;
   color: var(--text-bright);
+  font-weight: 600;
 }
 
 .tree-children {

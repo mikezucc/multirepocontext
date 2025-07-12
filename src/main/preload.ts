@@ -11,6 +11,7 @@ const api = {
       'set-api-key',
       'get-directory-tree',
       'scan-repository',
+      'process-directory',
       'read-file',
       'save-file',
       'setup-mcp-server',

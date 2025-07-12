@@ -233,6 +233,9 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
     const nextMatch = (currentMatch + 1) % totalMatches
     setCurrentMatch(nextMatch)
     highlightSearchResults()
+    // Refocus the search input to maintain highlighting
+    const searchInput = document.querySelector('.preview-search-input') as HTMLInputElement
+    if (searchInput) searchInput.focus()
   }
 
   const findPrevious = () => {
@@ -240,6 +243,9 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ filePath }) => {
     const prevMatch = currentMatch === 0 ? totalMatches - 1 : currentMatch - 1
     setCurrentMatch(prevMatch)
     highlightSearchResults()
+    // Refocus the search input to maintain highlighting
+    const searchInput = document.querySelector('.preview-search-input') as HTMLInputElement
+    if (searchInput) searchInput.focus()
   }
 
   if (loading) {

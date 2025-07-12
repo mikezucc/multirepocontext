@@ -111,6 +111,25 @@ export class IpcHandler {
       this.sendToDaemon('analyze-repository', { id })
     })
 
+    ipcMain.on('process-directory', async (event, data) => {
+      console.log('IPC: process-directory request received for:', data)
+      const { repositoryId, directoryPath } = data
+      
+      // Get repository info from our map
+      const repository = this.repositories.get(repositoryId)
+      if (!repository) {
+        console.error('IPC: Repository not found:', repositoryId)
+        return
+      }
+      
+      // Send to daemon to process specific directory
+      this.sendToDaemon('analyze-directory', { 
+        repositoryId, 
+        directoryPath,
+        repository 
+      })
+    })
+
     ipcMain.on('read-file', async (event, data) => {
       console.log('IPC: read-file request received for:', data)
       const { path } = data

@@ -175,6 +175,9 @@ const CodePreview: React.FC<CodePreviewProps> = ({ filePath }) => {
     const nextMatch = (currentMatch + 1) % totalMatches
     setCurrentMatch(nextMatch)
     highlightSearchResults()
+    // Refocus the search input to maintain highlighting
+    const searchInput = document.querySelector('.preview-search-input') as HTMLInputElement
+    if (searchInput) searchInput.focus()
   }
 
   const findPrevious = () => {
@@ -182,6 +185,9 @@ const CodePreview: React.FC<CodePreviewProps> = ({ filePath }) => {
     const prevMatch = currentMatch === 0 ? totalMatches - 1 : currentMatch - 1
     setCurrentMatch(prevMatch)
     highlightSearchResults()
+    // Refocus the search input to maintain highlighting
+    const searchInput = document.querySelector('.preview-search-input') as HTMLInputElement
+    if (searchInput) searchInput.focus()
   }
 
   const getLanguageFromExtension = (path: string): string => {

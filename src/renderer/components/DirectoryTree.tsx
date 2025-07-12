@@ -26,6 +26,8 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [searchResults, setSearchResults] = useState<Set<string>>(new Set())
   const [isSearching, setIsSearching] = useState(false)
+  const [hoveredPath, setHoveredPath] = useState<string | null>(null)
+  const [processingPath, setProcessingPath] = useState<string | null>(null)
 
   useEffect(() => {
     // Reset state
@@ -110,6 +112,20 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
     }
   }
 
+  const handleProcessDirectory = async (dirPath: string, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent expanding/collapsing the directory
+    setProcessingPath(dirPath)
+    
+    // Send request to process this directory
+    window.electronAPI.send('process-directory', { 
+      repositoryId, 
+      directoryPath: dirPath 
+    })
+    
+    // Clear processing state after 2 seconds
+    setTimeout(() => setProcessingPath(null), 2000)
+  }
+
   const handleSearch = (query: string) => {
     setSearchQuery(query)
     setIsSearching(query.length > 0)
@@ -171,9 +187,19 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
       return null
     }
 
+    console.log('Rendering node:', nodePath, 'type:', node.type);
+
     if (node.type === 'directory') {
+      const isProcessing = processingPath === node.path
+      const isHovered = hoveredPath === nodePath
+      
       return (
-        <div key={nodePath} className="tree-node">
+        <div 
+          key={nodePath} 
+          className="tree-node"
+          onMouseEnter={() => setHoveredPath(nodePath)}
+          onMouseLeave={() => setHoveredPath(null)}
+        >
           <div
             className={`tree-item directory ${isExpanded ? 'expanded' : ''} ${isSearching && !hasMatchingChildren(node, nodePath) ? 'search-dim' : ''}`}
             style={{ paddingLeft: `${level * 16}px` }}
@@ -183,6 +209,16 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
             <span className="tree-name">{node.name}</span>
             {node.children?.some(child => child.isMdgent) && (
               <span className="has-mdgent">●</span>
+            )}
+            {(isHovered || isProcessing) && (
+              <button
+                className={`process-dir-btn ${isProcessing ? 'processing' : ''}`}
+                onClick={(e) => handleProcessDirectory(node.path, e)}
+                title="Generate AI documentation for this directory"
+                disabled={isProcessing}
+              >
+                {isProcessing ? '⏳' : 'Start'}
+              </button>
             )}
             {(node.lastModified || node.modifiedTime) && (
               <span className="tree-time">{formatCompactTime(node.lastModified || node.modifiedTime || 0)}</span>
@@ -205,7 +241,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
           onClick={() => handleFileClick(node.path)}
         >
           <span className="file-icon">
-            {node.isMdgent ? '>' : ''}
+            {node.isMdgent ? '' : ''}
           </span>
           <span className="tree-name">{node.name}</span>
           {node.modifiedTime && (
