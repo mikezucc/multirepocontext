@@ -13,7 +13,7 @@
   flex-direction: column;
   background-color: var(--pd-bg-primary);
   color: var(--pd-text-primary);
-  font-family: 'Courier Prime', monospace;
+  font-family: 'Golos Text', monospace;
 }
 
 .prompt-debugger-header {
@@ -240,7 +240,7 @@
   background-color: var(--pd-bg-secondary);
   border-radius: 3px;
   padding: 16px;
-  font-family: 'Courier Prime', monospace;
+  font-family: 'Golos Text', monospace;
   font-size: 12px;
   white-space: pre-wrap;
   word-wrap: break-word;

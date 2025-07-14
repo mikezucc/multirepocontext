@@ -50,7 +50,7 @@
 .error-path {
   color: var(--text-secondary);
   font-size: 12px;
-  font-family: monospace;
+  font-family: 'Golos Text', monospace;
 }
 
 /* Preview Header */
@@ -81,7 +81,7 @@
 .file-path {
   font-size: 12px;
   color: var(--text-secondary);
-  font-family: monospace;
+  font-family: 'Golos Text', monospace;
   opacity: 0.8;
 }
 
@@ -168,7 +168,7 @@
   background: var(--bg-secondary);
   padding: 2px 4px;
   border-radius: 3px;
-  font-family: 'Courier Prime', monospace;
+  font-family: 'Golos Text', monospace;
   font-size: 1em;
   font-weight: 550;
 }

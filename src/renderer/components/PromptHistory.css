@@ -252,7 +252,7 @@
 
 .result-path {
   flex: 1;
-  font-family: var(--font-mono);
+  font-family: 'Golos Text', monospace;
   font-size: 12px;
   color: var(--text-primary);
 }
@@ -272,7 +272,7 @@
   padding: 8px;
   background: var(--bg-primary);
   border-radius: 4px;
-  font-family: var(--font-mono);
+  font-family: 'Golos Text', monospace;
   font-size: 12px;
   line-height: 1.5;
   overflow-x: auto;

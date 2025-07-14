@@ -79,7 +79,7 @@
   border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 16px;
-  font-family: 'Courier Prime', monospace;
+  font-family: 'Golos Text', monospace;
   font-size: 14px;
   line-height: 1.6;
   color: var(--text-primary);
@@ -114,7 +114,7 @@
   color: var(--text-primary);
   border-radius: 4px;
   outline: none;
-  font-family: 'Courier Prime', monospace;
+  font-family: 'Golos Text', monospace;
 }
 
 .search-input:focus {

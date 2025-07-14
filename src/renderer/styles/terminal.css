@@ -18,7 +18,7 @@
 }
 
 body {
-  font-family: 'Courier Prime', monospace;
+  font-family: 'Golos Text', monospace;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   overflow: hidden;
