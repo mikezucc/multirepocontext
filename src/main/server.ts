@@ -65,6 +65,8 @@ export class SearchServer {
           options
         )
 
+        console.log('[SearchServer] [BEFORE] Expanded prompt:', prompt)
+
         // Expand the prompt with related keywords
         const expandedPrompt = await promptExpansionService.expandPromptForSearch(prompt)
         console.log('[SearchServer] Expanded prompt:', expandedPrompt)

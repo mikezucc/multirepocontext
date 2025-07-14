@@ -19,7 +19,9 @@ const api = {
       'get-vector-stats',
       'get-token-usage',
       'debug-search',
-      'reset-vector-database'
+      'reset-vector-database',
+      'update-repository-opened',
+      'get-mcp-server-status'
     ]
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data)
@@ -41,7 +43,8 @@ const api = {
       'vector-stats',
       'token-usage-update',
       'debug-search-results',
-      'vector-database-reset'
+      'vector-database-reset',
+      'mcp-server-status'
     ]
     console.log('Preload: Setting up listener for channel:', channel);
     if (validChannels.includes(channel)) {

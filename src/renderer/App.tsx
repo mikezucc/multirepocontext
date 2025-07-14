@@ -4,6 +4,7 @@ import SettingsModal from './components/SettingsModal'
 import StatusBar from './components/StatusBar'
 import TabBar from './components/TabBar'
 import TokenUsageMeter from './components/TokenUsageMeter'
+import MCPStatusIndicator from './components/MCPStatusIndicator'
 import { PromptDebugger } from './components/PromptDebugger'
 import { ConfigView } from './components/ConfigView'
 import { PromptHistory } from './components/PromptHistory'
@@ -214,6 +215,10 @@ function App() {
             History
           </button>
         </div>
+        <MCPStatusIndicator 
+          repositories={repositories}
+          selectedRepo={selectedRepo}
+        />
         <TokenUsageMeter />
         <button className="settings-btn" onClick={() => setShowSettings(true)}>
           ⚙

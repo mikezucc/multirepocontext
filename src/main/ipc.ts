@@ -26,6 +26,7 @@ export class IpcHandler {
 
   setServerPort(port: number) {
     this.serverPort = port
+    console.log(`[IPC] Server port set to ${port}`)
   }
 
   private generateRepositoryId(repoPath: string): string {
@@ -554,9 +555,11 @@ export class IpcHandler {
   }
 
   private async loadStoredRepositories() {
+    console.log('[IPC] loadStoredRepositories called')
     try {
       // Wait a bit for the daemon to be ready and server port to be set
       setTimeout(() => {
+        console.log(`[IPC] Checking server port: ${this.serverPort}`)
         // Don't start MCP servers if server port is not set yet
         if (this.serverPort === 0) {
           console.log('[IPC] Server port not set yet, delaying MCP server startup')
@@ -582,6 +585,7 @@ export class IpcHandler {
             this.sendToDaemon('add-repository', repository)
             
             // Start MCP server for this repository
+            console.log(`[IPC] Starting MCP server for repository: ${repository.name}`)
             this.startMCPServer(repository.id, repository.path, repository.name)
           } else {
             // Remove from store if path no longer exists
