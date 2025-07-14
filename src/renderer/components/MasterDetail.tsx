@@ -34,7 +34,8 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
       env: {
         MDGENT_SERVER_PORT: serverPort.toString(),
         MDGENT_REPOSITORY_ID: repo.id,
-        MDGENT_REPOSITORY_PATH: repo.path
+        MDGENT_REPOSITORY_PATH: repo.path,
+        MDGENT_REPOSITORY_NAME: repo.name
       }
     }
     

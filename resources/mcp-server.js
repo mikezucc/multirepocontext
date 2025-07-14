@@ -12,7 +12,8 @@ const readline = require('readline');
 const CONFIG = {
   serverPort: process.env.MDGENT_SERVER_PORT || '3000',
   repositoryId: process.env.MDGENT_REPOSITORY_ID || '',
-  repositoryPath: process.env.MDGENT_REPOSITORY_PATH || ''
+  repositoryPath: process.env.MDGENT_REPOSITORY_PATH || '',
+  repositoryName: process.env.MDGENT_REPOSITORY_NAME || 'Unknown'
 };
 
 // MCP protocol handler
@@ -143,6 +144,7 @@ class MCPServer {
       const data = JSON.stringify({
         prompt: query,
         repositoryId: CONFIG.repositoryId,
+        repositoryName: CONFIG.repositoryName,
         options: {
           topK: topK,
           contextChunks: 2,

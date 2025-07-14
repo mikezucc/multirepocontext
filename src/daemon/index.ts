@@ -903,7 +903,8 @@ Format the response as markdown suitable for a README file.`
         env: {
           MDGENT_SERVER_PORT: (serverPort || 3000).toString(),
           MDGENT_REPOSITORY_ID: repositoryId,
-          MDGENT_REPOSITORY_PATH: repository.path
+          MDGENT_REPOSITORY_PATH: repository.path,
+          MDGENT_REPOSITORY_NAME: repository.name
         },
         description: "MDgent RAG server for enhanced context retrieval"
       }
@@ -918,7 +919,8 @@ Format the response as markdown suitable for a README file.`
         env: {
           MDGENT_SERVER_PORT: (serverPort || 3000).toString(),
           MDGENT_REPOSITORY_ID: repositoryId,
-          MDGENT_REPOSITORY_PATH: repository.path
+          MDGENT_REPOSITORY_PATH: repository.path,
+          MDGENT_REPOSITORY_NAME: repository.name
         }
       }
       const encodedConfig = Buffer.from(JSON.stringify(cursorConfig)).toString('base64')

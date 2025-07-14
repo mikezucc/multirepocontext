@@ -47,11 +47,12 @@ interface DebugSearchResults {
 interface PromptDebuggerProps {
   repositoryId: string | null
   repositoryName?: string
+  initialPrompt?: string
 }
 
-export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, repositoryName }) => {
+export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, repositoryName, initialPrompt }) => {
   const [stats, setStats] = useState<VectorStats | null>(null)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(initialPrompt || '')
   const [searchResults, setSearchResults] = useState<DebugSearchResults | null>(null)
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -68,12 +69,20 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
       setStats(null)
       setSearchResults(null)
       setSelectedResult(null)
-      setQuery('')
+      if (!initialPrompt) {
+        setQuery('')
+      }
       
       // Request vector stats
       window.electronAPI.send('get-vector-stats', { id: repositoryId })
     }
   }, [repositoryId])
+
+  useEffect(() => {
+    if (initialPrompt) {
+      setQuery(initialPrompt)
+    }
+  }, [initialPrompt])
 
   useEffect(() => {
     // Listen for vector stats

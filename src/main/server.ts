@@ -4,6 +4,9 @@ import { hybridSearch } from './vectordb/search'
 import { embeddingGenerator } from './embeddings/embeddings'
 import { vectorDB } from './vectordb/database'
 import { countTokens } from '../shared/tokenUtils'
+import { promptExpansionService } from './services/promptExpansion'
+import { promptHistoryStore } from './database/promptHistoryStore'
+import { v4 as uuidv4 } from 'uuid'
 
 export class SearchServer {
   private app: express.Application
@@ -42,7 +45,7 @@ export class SearchServer {
     // Main search endpoint
     this.app.post('/search', async (req, res) => {
       try {
-        const { prompt, repositoryId, options = {} } = req.body
+        const { prompt, repositoryId, repositoryName = 'Unknown', options = {} } = req.body
 
         if (!prompt || !repositoryId) {
           return res.status(400).json({
@@ -52,12 +55,26 @@ export class SearchServer {
 
         console.log('[SearchServer] Processing request for repository:', repositoryId)
 
-        // Generate embedding for the prompt
-        const queryEmbedding = await embeddingGenerator.generateEmbedding(prompt)
-
-        // Perform hybrid search
-        const searchResults = await hybridSearch.hybridSearch(
+        // Create prompt history entry
+        const promptHistoryId = uuidv4()
+        promptHistoryStore.addPromptHistory(
+          promptHistoryId,
           prompt,
+          repositoryId,
+          repositoryName,
+          options
+        )
+
+        // Expand the prompt with related keywords
+        const expandedPrompt = await promptExpansionService.expandPromptForSearch(prompt)
+        console.log('[SearchServer] Expanded prompt:', expandedPrompt)
+
+        // Generate embedding for the expanded prompt
+        const queryEmbedding = await embeddingGenerator.generateEmbedding(expandedPrompt)
+
+        // Perform hybrid search with expanded prompt
+        const searchResults = await hybridSearch.hybridSearch(
+          expandedPrompt,
           queryEmbedding,
           repositoryId,
           {
@@ -95,6 +112,7 @@ export class SearchServer {
         const response = {
           success: true,
           query: prompt,
+          expandedQuery: expandedPrompt,
           results: resultsWithContext.map(r => ({
             filePath: r.filePath,
             title: r.title,
@@ -103,6 +121,18 @@ export class SearchServer {
             metadata: r.metadata
           }))
         }
+
+        // Save search results to prompt history
+        const historyResults = resultsWithContext.map(r => ({
+          document_id: r.documentId,
+          document_path: r.filePath,
+          chunk_index: r.chunkIndex || 0,
+          score: r.score,
+          content: r.expandedContext || r.content,
+          metadata: r.metadata
+        }))
+        
+        promptHistoryStore.addPromptResults(promptHistoryId, historyResults)
 
         // Track MCP server token usage
         const inputTokens = countTokens(prompt)
@@ -141,6 +171,102 @@ export class SearchServer {
       } catch (error) {
         console.error('[SearchServer] Error checking repository status:', error)
         res.status(500).json({ error: 'Failed to check repository status' })
+      }
+    })
+
+    // Get prompt history for a repository
+    this.app.get('/prompt-history/:repositoryId', async (req, res) => {
+      try {
+        const { repositoryId } = req.params
+        const { limit = 50 } = req.query
+        
+        const history = promptHistoryStore.getPromptHistory(
+          repositoryId, 
+          parseInt(limit as string)
+        )
+        
+        res.json({
+          success: true,
+          history
+        })
+      } catch (error) {
+        console.error('[SearchServer] Error fetching prompt history:', error)
+        res.status(500).json({ 
+          success: false,
+          error: 'Failed to fetch prompt history' 
+        })
+      }
+    })
+
+    // Get all prompt history
+    this.app.get('/prompt-history', async (req, res) => {
+      try {
+        const { limit = 100 } = req.query
+        
+        const history = promptHistoryStore.getAllPromptHistory(
+          parseInt(limit as string)
+        )
+        
+        res.json({
+          success: true,
+          history
+        })
+      } catch (error) {
+        console.error('[SearchServer] Error fetching all prompt history:', error)
+        res.status(500).json({ 
+          success: false,
+          error: 'Failed to fetch prompt history' 
+        })
+      }
+    })
+
+    // Get results for a specific prompt
+    this.app.get('/prompt-results/:promptId', async (req, res) => {
+      try {
+        const { promptId } = req.params
+        
+        const results = promptHistoryStore.getPromptResults(promptId)
+        
+        res.json({
+          success: true,
+          results
+        })
+      } catch (error) {
+        console.error('[SearchServer] Error fetching prompt results:', error)
+        res.status(500).json({ 
+          success: false,
+          error: 'Failed to fetch prompt results' 
+        })
+      }
+    })
+
+    // Search prompt history
+    this.app.get('/prompt-history/search', async (req, res) => {
+      try {
+        const { q, repositoryId } = req.query
+        
+        if (!q) {
+          return res.status(400).json({
+            success: false,
+            error: 'Search query (q) is required'
+          })
+        }
+        
+        const history = promptHistoryStore.searchPromptHistory(
+          q as string,
+          repositoryId as string | undefined
+        )
+        
+        res.json({
+          success: true,
+          history
+        })
+      } catch (error) {
+        console.error('[SearchServer] Error searching prompt history:', error)
+        res.status(500).json({ 
+          success: false,
+          error: 'Failed to search prompt history' 
+        })
       }
     })
   }

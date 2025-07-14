@@ -117,6 +117,10 @@ export class IpcHandler {
       this.sendToDaemon('configure', { apiKey: data.apiKey })
     })
 
+    ipcMain.on('get-server-port', (event) => {
+      event.reply('server-port', this.serverPort)
+    })
+
     ipcMain.on('get-directory-tree', (event, data) => {
       console.log('IPC: get-directory-tree request received for:', data)
       const { id } = data
