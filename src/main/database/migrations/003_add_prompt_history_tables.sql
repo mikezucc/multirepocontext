@@ -17,13 +17,15 @@ CREATE TABLE IF NOT EXISTS prompt_history (
 CREATE TABLE IF NOT EXISTS prompt_results (
   id TEXT PRIMARY KEY,
   prompt_history_id TEXT NOT NULL,
+  repository_id TEXT NOT NULL,
   document_id TEXT NOT NULL,
   document_path TEXT NOT NULL,
   chunk_index INTEGER NOT NULL,
   score REAL NOT NULL,
   content TEXT NOT NULL,
   metadata TEXT,
-  FOREIGN KEY (prompt_history_id) REFERENCES prompt_history(id) ON DELETE CASCADE
+  FOREIGN KEY (prompt_history_id) REFERENCES prompt_history(id) ON DELETE CASCADE,
+  FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE
 );
 
 -- Create indexes for better performance

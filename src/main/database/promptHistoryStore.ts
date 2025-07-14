@@ -15,6 +15,7 @@ interface PromptHistoryEntry {
 interface PromptResult {
   id: string
   prompt_history_id: string
+  repository_id: string
   document_id: string
   document_path: string
   chunk_index: number
@@ -67,13 +68,15 @@ class PromptHistoryStore {
           CREATE TABLE IF NOT EXISTS prompt_results (
             id TEXT PRIMARY KEY,
             prompt_history_id TEXT NOT NULL,
+            repository_id TEXT NOT NULL,
             document_id TEXT NOT NULL,
             document_path TEXT NOT NULL,
             chunk_index INTEGER NOT NULL,
             score REAL NOT NULL,
             content TEXT NOT NULL,
             metadata TEXT,
-            FOREIGN KEY (prompt_history_id) REFERENCES prompt_history(id) ON DELETE CASCADE
+            FOREIGN KEY (prompt_history_id) REFERENCES prompt_history(id) ON DELETE CASCADE,
+            FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE
           );
 
           -- Create indexes for better performance
@@ -155,13 +158,13 @@ class PromptHistoryStore {
   }
 
   // Add results for a prompt
-  addPromptResults(promptHistoryId: string, results: any[]): void {
+  addPromptResults(promptHistoryId: string, repositoryId: string, results: any[]): void {
     const stmt = this.db.prepare(`
       INSERT INTO prompt_results (
-        id, prompt_history_id, document_id, document_path
+        id, prompt_history_id, repository_id, document_id, document_path,
         chunk_index, score, content, metadata
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
 
     const updateCountStmt = this.db.prepare(`
@@ -178,6 +181,7 @@ class PromptHistoryStore {
           stmt.run(
             resultId,
             promptHistoryId,
+            repositoryId,
             result.document_id,
             result.document_path,
             result.chunk_index || 0,
@@ -287,18 +291,39 @@ class PromptHistoryStore {
   // Delete duplicate or problematic entries
   cleanupDuplicates(): void {
     try {
-      // Remove duplicate prompt_results entries, keeping only the most recent
-      this.db.exec(`
-        DELETE FROM prompt_results 
-        WHERE rowid NOT IN (
-          SELECT MIN(rowid) 
-          FROM prompt_results 
-          GROUP BY prompt_history_id, document_id, chunk_index
-        )
-      `)
-      console.log('[PromptHistoryStore] Cleaned up duplicate entries')
+      // Check if repository_id column exists
+      const columnExists = this.db.prepare(`
+        SELECT COUNT(*) as count 
+        FROM pragma_table_info('prompt_results') 
+        WHERE name='repository_id'
+      `).get() as { count: number }
+      
+      if (columnExists.count === 0) {
+        // If column doesn't exist, drop and recreate the table with new schema
+        console.log('[PromptHistoryStore] Migrating prompt_results table to include repository_id')
+        this.db.exec(`
+          DROP TABLE IF EXISTS prompt_results;
+          CREATE TABLE prompt_results (
+            id TEXT PRIMARY KEY,
+            prompt_history_id TEXT NOT NULL,
+            repository_id TEXT NOT NULL,
+            document_id TEXT NOT NULL,
+            document_path TEXT NOT NULL,
+            chunk_index INTEGER NOT NULL,
+            score REAL NOT NULL,
+            content TEXT NOT NULL,
+            metadata TEXT,
+            FOREIGN KEY (prompt_history_id) REFERENCES prompt_history(id) ON DELETE CASCADE,
+            FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE
+          );
+          CREATE INDEX idx_prompt_results_prompt_history_id ON prompt_results(prompt_history_id);
+          CREATE INDEX idx_prompt_results_score ON prompt_results(score);
+        `)
+      }
+      
+      console.log('[PromptHistoryStore] Cleanup completed')
     } catch (error) {
-      console.error('[PromptHistoryStore] Error cleaning up duplicates:', error)
+      console.error('[PromptHistoryStore] Error during cleanup:', error)
     }
   }
 

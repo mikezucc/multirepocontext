@@ -132,7 +132,7 @@ export class SearchServer {
           metadata: r.metadata
         }))
         
-        promptHistoryStore.addPromptResults(promptHistoryId, historyResults)
+        promptHistoryStore.addPromptResults(promptHistoryId, repositoryId, historyResults)
 
         // Track MCP server token usage
         const inputTokens = countTokens(prompt)
