@@ -48,30 +48,52 @@ interface PromptDebuggerProps {
   repositoryId: string | null
   repositoryName?: string
   initialPrompt?: string
+  persistedState?: {
+    query: string
+    searchResults: DebugSearchResults | null
+    selectedResult: SearchResult | null
+    expandedSections: {
+      stats: boolean
+      results: boolean
+      detail: boolean
+    }
+  }
+  onStateChange?: (updates: Partial<{
+    query: string
+    searchResults: DebugSearchResults | null
+    selectedResult: SearchResult | null
+    expandedSections: {
+      stats: boolean
+      results: boolean
+      detail: boolean
+    }
+  }>) => void
 }
 
-export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, repositoryName, initialPrompt }) => {
+export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, repositoryName, initialPrompt, persistedState, onStateChange }) => {
   const [stats, setStats] = useState<VectorStats | null>(null)
-  const [query, setQuery] = useState(initialPrompt || '')
-  const [searchResults, setSearchResults] = useState<DebugSearchResults | null>(null)
-  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null)
+  const [query, setQuery] = useState(persistedState?.query || initialPrompt || '')
+  const [searchResults, setSearchResults] = useState<DebugSearchResults | null>(persistedState?.searchResults || null)
+  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(persistedState?.selectedResult || null)
   const [loading, setLoading] = useState(false)
-  const [expandedSections, setExpandedSections] = useState({
+  const [expandedSections, setExpandedSections] = useState(persistedState?.expandedSections || {
     stats: true,
     results: true,
     detail: true
   })
   const [resetMessage, setResetMessage] = useState<string | null>(null)
 
+  // Notify parent of state changes
+  useEffect(() => {
+    if (onStateChange) {
+      onStateChange({ query, searchResults, selectedResult, expandedSections })
+    }
+  }, [query, searchResults, selectedResult, expandedSections])
+
   useEffect(() => {
     if (repositoryId) {
-      // Reset state when repository changes
+      // Only reset stats when repository changes (not search results)
       setStats(null)
-      setSearchResults(null)
-      setSelectedResult(null)
-      if (!initialPrompt) {
-        setQuery('')
-      }
       
       // Request vector stats
       window.electronAPI.send('get-vector-stats', { id: repositoryId })
@@ -79,10 +101,20 @@ export const PromptDebugger: React.FC<PromptDebuggerProps> = ({ repositoryId, re
   }, [repositoryId])
 
   useEffect(() => {
-    if (initialPrompt) {
+    if (initialPrompt && !persistedState?.query) {
       setQuery(initialPrompt)
     }
   }, [initialPrompt])
+
+  // Update state when persisted state changes
+  useEffect(() => {
+    if (persistedState) {
+      setQuery(persistedState.query || '')
+      setSearchResults(persistedState.searchResults)
+      setSelectedResult(persistedState.selectedResult)
+      setExpandedSections(persistedState.expandedSections)
+    }
+  }, [repositoryId]) // Only update when repository changes
 
   useEffect(() => {
     // Listen for vector stats

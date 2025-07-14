@@ -19,12 +19,27 @@ declare global {
   }
 }
 
+// Interface for persisted debug state
+interface DebugState {
+  query: string
+  searchResults: any | null
+  selectedResult: any | null
+  expandedSections: {
+    stats: boolean
+    results: boolean
+    detail: boolean
+  }
+}
+
 function App() {
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [currentView, setCurrentView] = useState<'files' | 'debug' | 'config' | 'history'>('files')
   const [debugPrompt, setDebugPrompt] = useState<string>('')
+  
+  // Persistent debug state per repository
+  const [debugStates, setDebugStates] = useState<Record<string, DebugState>>({})
 
   const handleSelectRepo = (repo: Repository) => {
     setSelectedRepo(repo)
@@ -73,11 +88,39 @@ function App() {
     setCurrentView('debug')
   }
 
-  useEffect(() => {
-    // Clear debug prompt after switching away from debug view
-    if (currentView !== 'debug' && debugPrompt) {
-      setDebugPrompt('')
+  // Update debug state for current repository
+  const updateDebugState = (updates: Partial<DebugState>) => {
+    if (selectedRepo?.id) {
+      setDebugStates(prev => ({
+        ...prev,
+        [selectedRepo.id]: {
+          ...prev[selectedRepo.id],
+          ...updates
+        }
+      }))
     }
+  }
+
+  // Get debug state for current repository
+  const getDebugState = (): DebugState => {
+    if (selectedRepo?.id && debugStates[selectedRepo.id]) {
+      return debugStates[selectedRepo.id]
+    }
+    return {
+      query: debugPrompt || '',
+      searchResults: null,
+      selectedResult: null,
+      expandedSections: {
+        stats: true,
+        results: true,
+        detail: true
+      }
+    }
+  }
+
+  useEffect(() => {
+    // Don't clear debug prompt when switching views
+    // This allows the state to persist
   }, [currentView])
 
   return (
@@ -188,6 +231,8 @@ function App() {
           repositoryId={selectedRepo?.id || null}
           repositoryName={selectedRepo?.name}
           initialPrompt={debugPrompt}
+          persistedState={getDebugState()}
+          onStateChange={updateDebugState}
         />
       ) : currentView === 'config' ? (
         <ConfigView
