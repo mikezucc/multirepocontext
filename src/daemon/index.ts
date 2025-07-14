@@ -859,43 +859,24 @@ Format the response as markdown suitable for a README file.`
       const mcpServerPath = path.join(mcpDir, 'mdgent-mcp-server.js')
       await fs.writeFile(mcpServerPath, mcpServerContent, { mode: 0o755 })
       
-      // Read MCP config template
-      const configTemplatePath = isDev
-        ? path.join(__dirname, '../../resources/mcp-config-template.json')
-        : path.join(process.resourcesPath, 'resources/mcp-config-template.json')
-      let configContent = await fs.readFile(configTemplatePath, 'utf-8')
-      
-      // Replace placeholders
-      configContent = configContent
-        .replace(/{{MCP_SERVER_PATH}}/g, mcpServerPath)
-        .replace(/{{SERVER_PORT}}/g, serverPort?.toString() || '3000')
-        .replace(/{{REPOSITORY_ID}}/g, repositoryId)
-        .replace(/{{REPOSITORY_PATH}}/g, repository.path)
-      
-      // Write MCP configuration to .mdgent/mcp directory for reference
-      const mcpConfigPath = path.join(mcpDir, 'mcp-config.json')
-      await fs.writeFile(mcpConfigPath, configContent)
-      
       // Check for existing .mcp.json and merge if it exists
       const rootMcpPath = path.join(repository.path, '.mcp.json')
       let rootMcpConfig: any = {
         mcpServers: {}
       }
-      
-      // Try to read existing .mcp.json
+
+      // initialize rootMCPConfig from rootMCPPath if it exists
       try {
-        const existingConfig = await fs.readFile(rootMcpPath, 'utf-8')
-        rootMcpConfig = JSON.parse(existingConfig)
-        console.log('[DAEMON] Found existing .mcp.json, will merge MDgent server')
-        
-        // Ensure mcpServers object exists
+        const existingMcpContent = await fs.readFile(rootMcpPath, 'utf-8')
+        rootMcpConfig = JSON.parse(existingMcpContent)
         if (!rootMcpConfig.mcpServers) {
           rootMcpConfig.mcpServers = {}
         }
+        console.log('[DAEMON] Existing .mcp.json found, merging configuration')
       } catch (error) {
         console.log('[DAEMON] No existing .mcp.json found, creating new one')
       }
-      
+
       // Add MDgent server to the configuration
       rootMcpConfig.mcpServers["mdgent-rag"] = {
         command: "node",
@@ -906,7 +887,7 @@ Format the response as markdown suitable for a README file.`
           MDGENT_REPOSITORY_PATH: repository.path,
           MDGENT_REPOSITORY_NAME: repository.name
         },
-        description: "MDgent RAG server for enhanced context retrieval"
+        description: "For every prompt, this MCP server provides highly relevant context for every single prompt from the codebase using advanced semantic search powered by embeddings. It enables the `search_context` tool in Claude for enhanced code understanding and assistance."
       }
       
       // Write the merged configuration
@@ -975,93 +956,93 @@ __snapshots__/**
       }
       
       // Create README for MCP setup
-      const readmeContent = `# MDgent MCP Server Setup
+//       const readmeContent = `# MDgent MCP Server Setup
 
-This directory contains the MCP (Model Context Protocol) server configuration for MDgent.
+// This directory contains the MCP (Model Context Protocol) server configuration for MDgent.
 
-## Automatic Setup
+// ## Automatic Setup
 
-### Claude Code (Recommended)
+// ### Claude Code (Recommended)
 
-Claude Code will automatically detect and use the MCP server configuration when you run it in this repository:
+// Claude Code will automatically detect and use the MCP server configuration when you run it in this repository:
 
-1. A \`.mcp.json\` file has been created at the repository root
-2. Simply run \`claude\` in this directory or any subdirectory
-3. Claude Code will automatically load the MDgent RAG server
-4. You'll be prompted to approve the server on first use
+// 1. A \`.mcp.json\` file has been created at the repository root
+// 2. Simply run \`claude\` in this directory or any subdirectory
+// 3. Claude Code will automatically load the MDgent RAG server
+// 4. You'll be prompted to approve the server on first use
 
-### Cursor IDE
+// ### Cursor IDE
 
-To install in Cursor:
+// To install in Cursor:
 
-1. Click the "Install to Cursor" button in MDgent after setting up the MCP server
-2. Or use this deeplink: \`${cursorDeeplink}\`
-3. Cursor will prompt you to approve the MCP server installation
-4. Once approved, you can use the \`search_context\` tool in Cursor
+// 1. Click the "Install to Cursor" button in MDgent after setting up the MCP server
+// 2. Or use this deeplink: \`${cursorDeeplink}\`
+// 3. Cursor will prompt you to approve the MCP server installation
+// 4. Once approved, you can use the \`search_context\` tool in Cursor
 
-### Claude Desktop (Manual Setup)
+// ### Claude Desktop (Manual Setup)
 
-If you prefer to use Claude Desktop, you can manually add the configuration:
+// If you prefer to use Claude Desktop, you can manually add the configuration:
 
-1. Open Claude Desktop settings
-2. Go to the "Developer" section
-3. Click "Edit Config" 
-4. Add the following configuration to your settings:
+// 1. Open Claude Desktop settings
+// 2. Go to the "Developer" section
+// 3. Click "Edit Config" 
+// 4. Add the following configuration to your settings:
 
-\`\`\`json
-${configContent}
-\`\`\`
+// \`\`\`json
+// ${configContent}
+// \`\`\`
 
-5. Restart Claude Desktop
+// 5. Restart Claude Desktop
 
-## Claude Code Integration
+// ## Claude Code Integration
 
-MDgent has automatically configured this repository for optimal Claude Code usage:
+// MDgent has automatically configured this repository for optimal Claude Code usage:
 
-1. **CLAUDE.md** - Created at the repository root with project-specific configuration
-2. **.claude/settings.json** - Contains Claude Code settings and context rules
-3. **.mcp.json** - Enables automatic MCP server loading in Claude Code
-4. **MCP Server** - Provides enhanced search capabilities through the \`search_context\` tool
+// 1. **CLAUDE.md** - Created at the repository root with project-specific configuration
+// 2. **.claude/settings.json** - Contains Claude Code settings and context rules
+// 3. **.mcp.json** - Enables automatic MCP server loading in Claude Code
+// 4. **MCP Server** - Provides enhanced search capabilities through the \`search_context\` tool
 
-## Usage
+// ## Usage
 
-### In Claude Desktop
-Once configured, you can use the \`search_context\` tool to search for relevant context in your codebase.
+// ### In Claude Desktop
+// Once configured, you can use the \`search_context\` tool to search for relevant context in your codebase.
 
-### In Claude Code
-When you open this repository in Claude Code, it will automatically:
-- Load the CLAUDE.md configuration
-- Apply context inclusion/exclusion rules from .claude/settings.json
-- Enable the MDgent search capabilities
+// ### In Claude Code
+// When you open this repository in Claude Code, it will automatically:
+// - Load the CLAUDE.md configuration
+// - Apply context inclusion/exclusion rules from .claude/settings.json
+// - Enable the MDgent search capabilities
 
-### Search Examples
-- "search_context: authentication flow"
-- "search_context: database schema"
-- "search_context: API endpoints"
-- "search_context: error handling"
-- "search_context: configuration"
+// ### Search Examples
+// - "search_context: authentication flow"
+// - "search_context: database schema"
+// - "search_context: API endpoints"
+// - "search_context: error handling"
+// - "search_context: configuration"
 
-## Files
+// ## Files
 
-### MCP Server Files
-- \`mdgent-mcp-server.js\` - The MCP server implementation
-- \`mcp-config.json\` - The configuration for manual Claude Desktop setup
+// ### MCP Server Files
+// - \`mdgent-mcp-server.js\` - The MCP server implementation
+// - \`mcp-config.json\` - The configuration for manual Claude Desktop setup
 
-### Claude Code Files
-- \`../../.mcp.json\` - Auto-detected MCP configuration for Claude Code
-- \`../../CLAUDE.md\` - Claude Code configuration for this repository
-- \`../../.claude/settings.json\` - Additional Claude Code settings
+// ### Claude Code Files
+// - \`../../.mcp.json\` - Auto-detected MCP configuration for Claude Code
+// - \`../../CLAUDE.md\` - Claude Code configuration for this repository
+// - \`../../.claude/settings.json\` - Additional Claude Code settings
 
-## Benefits
+// ## Benefits
 
-With MDgent's Claude integration, you get:
-1. **Semantic Search**: Find code by meaning, not just text matching
-2. **AI-Generated Documentation**: Access .mdgent.md files for comprehensive code analysis
-3. **Context-Aware Assistance**: Claude understands your project structure and dependencies
-4. **Efficient Navigation**: Quickly locate relevant code sections
-`
+// With MDgent's Claude integration, you get:
+// 1. **Semantic Search**: Find code by meaning, not just text matching
+// 2. **AI-Generated Documentation**: Access .mdgent.md files for comprehensive code analysis
+// 3. **Context-Aware Assistance**: Claude understands your project structure and dependencies
+// 4. **Efficient Navigation**: Quickly locate relevant code sections
+// `
       
-      await fs.writeFile(path.join(mcpDir, 'README.md'), readmeContent)
+      // await fs.writeFile(path.join(mcpDir, 'README.md'), readmeContent)
       
       // Update .gitignore to include .mdgent/
       await this.updateGitignore(repository.path)
@@ -1070,51 +1051,51 @@ With MDgent's Claude integration, you get:
       await this.updateClaudeMd(repository)
       
       // Create .claude/settings.json for additional Claude Code configuration
-      const claudeSettings = {
-        "tools": {
-          "search_context": {
-            "enabled": true,
-            "description": "Before every response no matter what, use this tool to search the MDgent vector database for relevant code context.",
-            "mcp_tool": "mdgent-rag"
-          }
-        },
-        "context": {
-          "include_patterns": [
-            "**/*.ts",
-            "**/*.tsx",
-            "**/*.js",
-            "**/*.jsx",
-            "**/*.py",
-            "**/*.java",
-            "**/*.go",
-            "**/*.rs",
-            "**/*.cpp",
-            "**/*.c",
-            "**/*.md",
-            "**/*.mdx"
-          ],
-          "exclude_patterns": [
-            "**/node_modules/**",
-            "**/dist/**",
-            "**/build/**",
-            "**/.git/**",
-            "**/coverage/**",
-            "**/*.min.js",
-            "**/*.mdgent.md"
-          ]
-        },
-        "mdgent": {
-          "server_port": serverPort || 3000,
-          "repository_id": repositoryId,
-          "mcp_enabled": true
-        }
-      }
+      // const claudeSettings = {
+      //   "tools": {
+      //     "search_context": {
+      //       "enabled": true,
+      //       "description": "Before every response no matter what, use this tool to search the MDgent vector database for relevant code context.",
+      //       "mcp_tool": "mdgent-rag"
+      //     }
+      //   },
+      //   "context": {
+      //     "include_patterns": [
+      //       "**/*.ts",
+      //       "**/*.tsx",
+      //       "**/*.js",
+      //       "**/*.jsx",
+      //       "**/*.py",
+      //       "**/*.java",
+      //       "**/*.go",
+      //       "**/*.rs",
+      //       "**/*.cpp",
+      //       "**/*.c",
+      //       "**/*.md",
+      //       "**/*.mdx"
+      //     ],
+      //     "exclude_patterns": [
+      //       "**/node_modules/**",
+      //       "**/dist/**",
+      //       "**/build/**",
+      //       "**/.git/**",
+      //       "**/coverage/**",
+      //       "**/*.min.js",
+      //       "**/*.mdgent.md"
+      //     ]
+      //   },
+      //   "mdgent": {
+      //     "server_port": serverPort || 3000,
+      //     "repository_id": repositoryId,
+      //     "mcp_enabled": true
+      //   }
+      // }
       
       // const claudeSettingsPath = path.join(claudeDir, 'settings.json')
       // await fs.writeFile(claudeSettingsPath, JSON.stringify(claudeSettings, null, 2))
       
       console.log('[DAEMON] MCP server setup at:', mcpServerPath)
-      console.log('[DAEMON] MCP config created at:', mcpConfigPath)
+      // console.log('[DAEMON] MCP config created at:', mcpConfigPath)
       console.log('[DAEMON] Root .mcp.json updated at:', rootMcpPath)
       console.log('[DAEMON] CLAUDE.md updated at:', path.join(repository.path, 'CLAUDE.md'))
       // console.log('[DAEMON] Claude settings created at:', claudeSettingsPath)
@@ -1124,7 +1105,7 @@ With MDgent's Claude integration, you get:
         repositoryId,
         success: true,
         serverPath: mcpServerPath,
-        configPath: mcpConfigPath,
+        // configPath: mcpConfigPath,
         rootMcpPath,
         claudeMdPath: path.join(repository.path, 'CLAUDE.md'),
         // claudeSettingsPath,

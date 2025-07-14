@@ -29,7 +29,66 @@ class PromptHistoryStore {
   constructor() {
     const dbPath = path.join(app.getPath('userData'), 'mdgent.db')
     this.db = new Database(dbPath)
+    
+    // Run migration before initializing
+    this.runMigration()
     this.initialize()
+    
+    // Clean up any duplicate entries from previous runs
+    this.cleanupDuplicates()
+  }
+
+  private runMigration() {
+    try {
+      // Check if tables already exist
+      const tableExists = this.db.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='prompt_history'
+      `).get()
+      
+      if (!tableExists) {
+        console.log('[PromptHistoryStore] Running migration to create prompt history tables')
+        
+        // Execute migration inline since SQL files might not be available in production
+        const migration = `
+          -- Create prompt history table
+          CREATE TABLE IF NOT EXISTS prompt_history (
+            id TEXT PRIMARY KEY,
+            prompt TEXT NOT NULL,
+            repository_id TEXT NOT NULL,
+            repository_name TEXT NOT NULL,
+            options TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            total_results INTEGER DEFAULT 0,
+            FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE
+          );
+
+          -- Create prompt results table
+          CREATE TABLE IF NOT EXISTS prompt_results (
+            id TEXT PRIMARY KEY,
+            prompt_history_id TEXT NOT NULL,
+            document_id TEXT NOT NULL,
+            document_path TEXT NOT NULL,
+            chunk_index INTEGER NOT NULL,
+            score REAL NOT NULL,
+            content TEXT NOT NULL,
+            metadata TEXT,
+            FOREIGN KEY (prompt_history_id) REFERENCES prompt_history(id) ON DELETE CASCADE
+          );
+
+          -- Create indexes for better performance
+          CREATE INDEX IF NOT EXISTS idx_prompt_history_repository_id ON prompt_history(repository_id);
+          CREATE INDEX IF NOT EXISTS idx_prompt_history_timestamp ON prompt_history(timestamp);
+          CREATE INDEX IF NOT EXISTS idx_prompt_results_prompt_history_id ON prompt_results(prompt_history_id);
+          CREATE INDEX IF NOT EXISTS idx_prompt_results_score ON prompt_results(score);
+        `
+        this.db.exec(migration)
+        console.log('[PromptHistoryStore] Migration completed successfully')
+      }
+    } catch (error) {
+      console.error('[PromptHistoryStore] Migration error:', error)
+      // Continue with initialization even if migration fails
+    }
   }
 
   private initialize() {
@@ -99,7 +158,7 @@ class PromptHistoryStore {
   addPromptResults(promptHistoryId: string, results: any[]): void {
     const stmt = this.db.prepare(`
       INSERT INTO prompt_results (
-        id, prompt_history_id, document_id, document_path,
+        id, prompt_history_id, document_id, document_path
         chunk_index, score, content, metadata
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -113,20 +172,22 @@ class PromptHistoryStore {
     
     try {
       this.db.transaction(() => {
-        for (const result of results) {
-          const resultId = `${promptHistoryId}-${result.document_id}-${result.chunk_index}`
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i]
+          const resultId = `${promptHistoryId}-${i}-${Date.now()}`
           stmt.run(
             resultId,
             promptHistoryId,
             result.document_id,
             result.document_path,
-            result.chunk_index,
+            result.chunk_index || 0,
             result.score,
             result.content,
             JSON.stringify(result.metadata || {})
           )
         }
-        updateCountStmt.run(results.length, promptHistoryId)
+        const dbInsertResult = updateCountStmt.run(results.length, promptHistoryId);
+        console.log(`[PromptHistoryStore] Updated prompt history ${promptHistoryId} with ${dbInsertResult} total results.`);
       })()
     } catch (error) {
       console.error('Error adding prompt results:', error)
@@ -220,6 +281,24 @@ class PromptHistoryStore {
     } catch (error) {
       console.error('Error searching prompt history:', error)
       return []
+    }
+  }
+
+  // Delete duplicate or problematic entries
+  cleanupDuplicates(): void {
+    try {
+      // Remove duplicate prompt_results entries, keeping only the most recent
+      this.db.exec(`
+        DELETE FROM prompt_results 
+        WHERE rowid NOT IN (
+          SELECT MIN(rowid) 
+          FROM prompt_results 
+          GROUP BY prompt_history_id, document_id, chunk_index
+        )
+      `)
+      console.log('[PromptHistoryStore] Cleaned up duplicate entries')
+    } catch (error) {
+      console.error('[PromptHistoryStore] Error cleaning up duplicates:', error)
     }
   }
 

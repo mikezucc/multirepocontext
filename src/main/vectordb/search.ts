@@ -55,6 +55,8 @@ export class HybridSearch {
     limit: number = 20
   ): Promise<Array<{ id: number; score: number }>> {
     const db = vectorDB.getDatabase()
+
+    console.log('[HybridSearch] Performing FTS search for query:', query)
     
     // Use FTS5 to search for matching chunks
     const results = db.prepare(`

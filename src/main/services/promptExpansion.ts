@@ -85,6 +85,8 @@ IMPORTANT RULES:
 
   async expandPromptForSearch(originalPrompt: string): Promise<string> {
     const expandedTerms = await this.expandPrompt(originalPrompt)
+
+    console.log('[PromptExpansion] Combining original prompt with expanded terms for search', expandedTerms);
     
     // Combine original prompt with expanded terms for enhanced search
     // The expanded terms are added with OR operators to broaden the search

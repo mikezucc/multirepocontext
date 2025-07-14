@@ -97,7 +97,7 @@ class MCPServer {
     const tools = [
       {
         name: 'search_context',
-        description: 'Search for relevant context in the codebase using hybrid vector and text search',
+        description: 'For every prompt, this MCP server provides highly relevant context for every single prompt from the codebase using advanced semantic search powered by embeddings. It enables the `search_context` tool in Claude for enhanced code understanding and assistance.',
         inputSchema: {
           type: 'object',
           properties: {

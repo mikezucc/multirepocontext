@@ -12,6 +12,7 @@ export class IpcHandler {
   private repositories: Map<string, Repository> = new Map()
   private mainWindow: Electron.BrowserWindow | null = null
   private serverPort: number = 0
+  private mcpServers: Map<string, ChildProcess> = new Map() // repositoryId -> MCP server process
 
   constructor() {
     this.setupHandlers()
@@ -79,6 +80,9 @@ export class IpcHandler {
         
         // Send to daemon
         this.sendToDaemon('add-repository', repository)
+        
+        // Start MCP server for this repository
+        this.startMCPServer(repository.id, repository.path, repository.name)
       }
     })
 
@@ -95,6 +99,9 @@ export class IpcHandler {
       
       this.sendToDaemon('remove-repository', { id })
       this.sendToRenderer('repository-removed', { id })
+      
+      // Stop MCP server for this repository
+      this.stopMCPServer(id)
     })
 
     ipcMain.on('get-repositories', (event) => {
@@ -119,6 +126,14 @@ export class IpcHandler {
 
     ipcMain.on('get-server-port', (event) => {
       event.reply('server-port', this.serverPort)
+    })
+
+    ipcMain.on('get-mcp-server-status', (event) => {
+      const status: Record<string, boolean> = {}
+      for (const [repoId, repo] of this.repositories) {
+        status[repoId] = this.mcpServers.has(repoId)
+      }
+      event.reply('mcp-server-status', status)
     })
 
     ipcMain.on('get-directory-tree', (event, data) => {
@@ -460,6 +475,16 @@ export class IpcHandler {
       
       case 'mcp-status':
         this.sendToRenderer('mcp-status', message.data)
+        // If MCP setup was successful, try to start the MCP server
+        if (message.data.success && message.data.repositoryId) {
+          const repo = this.repositories.get(message.data.repositoryId)
+          if (repo) {
+            // Give it a moment for files to be written
+            setTimeout(() => {
+              this.startMCPServer(repo.id, repo.path, repo.name)
+            }, 1000)
+          }
+        }
         break
       
       case 'embeddings-status':
@@ -530,8 +555,14 @@ export class IpcHandler {
 
   private async loadStoredRepositories() {
     try {
-      // Wait a bit for the daemon to be ready
+      // Wait a bit for the daemon to be ready and server port to be set
       setTimeout(() => {
+        // Don't start MCP servers if server port is not set yet
+        if (this.serverPort === 0) {
+          console.log('[IPC] Server port not set yet, delaying MCP server startup')
+          setTimeout(() => this.loadStoredRepositories(), 2000)
+          return
+        }
         const storedRepos = repositoryStore.getAllRepositories()
         
         for (const stored of storedRepos) {
@@ -549,6 +580,9 @@ export class IpcHandler {
             
             // Send to daemon
             this.sendToDaemon('add-repository', repository)
+            
+            // Start MCP server for this repository
+            this.startMCPServer(repository.id, repository.path, repository.name)
           } else {
             // Remove from store if path no longer exists
             console.log(`Repository path no longer exists, removing: ${stored.path}`)
@@ -636,6 +670,120 @@ export class IpcHandler {
       this.sendToRenderer('token-usage-update', stats)
     } catch (error) {
       console.error('[IPC] Error tracking token usage:', error)
+    }
+  }
+
+  private startMCPServer(repositoryId: string, repositoryPath: string, repositoryName: string): void {
+    // Check if MCP server is already running for this repository
+    if (this.mcpServers.has(repositoryId)) {
+      console.log(`[IPC] MCP server already running for repository ${repositoryId}`)
+      return
+    }
+
+    const mcpServerPath = path.join(repositoryPath, '.mdgent', 'mcp', 'mdgent-mcp-server.js')
+    
+    // Check if MCP server file exists
+    if (!fs.existsSync(mcpServerPath)) {
+      console.warn(`[IPC] MCP server file not found for repository ${repositoryId}: ${mcpServerPath}`)
+      // Try again in a few seconds as the daemon might still be creating it
+      setTimeout(() => {
+        if (fs.existsSync(mcpServerPath) && this.repositories.has(repositoryId)) {
+          const repo = this.repositories.get(repositoryId)
+          if (repo) {
+            this.startMCPServer(repositoryId, repo.path, repo.name)
+          }
+        }
+      }, 5000)
+      return
+    }
+
+    console.log(`[IPC] Starting MCP server for repository ${repositoryId}`)
+
+    // Spawn the MCP server process
+    const mcpProcess = spawn('node', [mcpServerPath], {
+      env: {
+        ...process.env,
+        MDGENT_SERVER_PORT: this.serverPort.toString(),
+        MDGENT_REPOSITORY_ID: repositoryId,
+        MDGENT_REPOSITORY_PATH: repositoryPath,
+        MDGENT_REPOSITORY_NAME: repositoryName
+      },
+      stdio: ['pipe', 'pipe', 'pipe']
+    })
+
+    mcpProcess.on('error', (error) => {
+      console.error(`[IPC] MCP server error for ${repositoryId}:`, error)
+      this.mcpServers.delete(repositoryId)
+      this.sendMCPServerStatus()
+    })
+
+    mcpProcess.on('exit', (code, signal) => {
+      console.log(`[IPC] MCP server exited for ${repositoryId}: code=${code}, signal=${signal}`)
+      this.mcpServers.delete(repositoryId)
+      this.sendMCPServerStatus()
+      
+      // Auto-restart if it crashed unexpectedly
+      if (code !== 0 && signal !== 'SIGTERM' && this.repositories.has(repositoryId)) {
+        console.log(`[IPC] Restarting MCP server for ${repositoryId} in 5 seconds...`)
+        setTimeout(() => {
+          const repo = this.repositories.get(repositoryId)
+          if (repo) {
+            this.startMCPServer(repositoryId, repo.path, repo.name)
+          }
+        }, 5000)
+      }
+    })
+
+    // Log stdout for debugging
+    mcpProcess.stdout?.on('data', (data) => {
+      console.log(`[MCP-${repositoryId}]:`, data.toString().trim())
+    })
+
+    // Log stderr for debugging
+    mcpProcess.stderr?.on('data', (data) => {
+      console.error(`[MCP-${repositoryId}] Error:`, data.toString().trim())
+    })
+
+    this.mcpServers.set(repositoryId, mcpProcess)
+    
+    // Notify renderer of MCP server status change
+    this.sendMCPServerStatus()
+  }
+
+  private stopMCPServer(repositoryId: string): void {
+    const mcpProcess = this.mcpServers.get(repositoryId)
+    if (mcpProcess) {
+      console.log(`[IPC] Stopping MCP server for repository ${repositoryId}`)
+      mcpProcess.kill('SIGTERM')
+      this.mcpServers.delete(repositoryId)
+      
+      // Notify renderer of MCP server status change
+      this.sendMCPServerStatus()
+    }
+  }
+
+  private stopAllMCPServers(): void {
+    console.log('[IPC] Stopping all MCP servers...')
+    for (const [repositoryId, mcpProcess] of this.mcpServers) {
+      mcpProcess.kill('SIGTERM')
+    }
+    this.mcpServers.clear()
+  }
+
+  private sendMCPServerStatus(): void {
+    const status: Record<string, boolean> = {}
+    for (const [repoId, repo] of this.repositories) {
+      status[repoId] = this.mcpServers.has(repoId)
+    }
+    this.sendToRenderer('mcp-server-status', status)
+  }
+
+  // Clean up all child processes on exit
+  cleanup(): void {
+    this.stopAllMCPServers()
+    if (this.daemon) {
+      this.daemon.kill()
+      this.daemon = null
     }
   }
 }

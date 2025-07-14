@@ -126,7 +126,7 @@ export class SearchServer {
         const historyResults = resultsWithContext.map(r => ({
           document_id: r.documentId,
           document_path: r.filePath,
-          chunk_index: r.chunkIndex || 0,
+          chunk_index: r.chunkId || 0,
           score: r.score,
           content: r.expandedContext || r.content,
           metadata: r.metadata
