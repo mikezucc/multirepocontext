@@ -80,7 +80,22 @@ const StatusBar: React.FC<StatusBarProps> = ({ repositories }) => {
   }, [])
 
   const addLog = (message: string, type: DaemonLog['type'] = 'info') => {
-    setLogs(prev => [...prev, { timestamp: new Date(), message, type }])
+    setLogs(prev => {
+      // Check if the same message was logged within the last second
+      const now = new Date()
+      const oneSecondAgo = new Date(now.getTime() - 1000)
+      
+      const isDuplicate = prev.some(log => 
+        log.message === message && 
+        log.timestamp >= oneSecondAgo
+      )
+      
+      if (isDuplicate) {
+        return prev // Don't add duplicate
+      }
+      
+      return [...prev, { timestamp: now, message, type }]
+    })
   }
 
   const activeRepos = repositories.filter(r => r.status === 'analyzing' || r.status === 'scanning').length
