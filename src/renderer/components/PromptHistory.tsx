@@ -50,6 +50,7 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
   const [searchTerm, setSearchTerm] = useState('')
   const [showAllRepos, setShowAllRepos] = useState(false)
   const [serverPort, setServerPort] = useState<number>(3989)
+  const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     // Get server port on mount
@@ -141,6 +142,8 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
   useEffect(() => {
     if (selectedEntry) {
       fetchResults(selectedEntry.id)
+      // Reset expanded results when selecting a new entry
+      setExpandedResults(new Set())
     } else {
       setResults([])
     }
@@ -152,6 +155,18 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
     } else {
       navigator.clipboard.writeText(prompt)
     }
+  }
+
+  const toggleResultExpansion = (resultId: string) => {
+    setExpandedResults(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(resultId)) {
+        newSet.delete(resultId)
+      } else {
+        newSet.add(resultId)
+      }
+      return newSet
+    })
   }
 
   const formatTimestamp = (timestamp: string) => {
@@ -270,16 +285,28 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
                   <div className="no-results">No results found</div>
                 ) : (
                   <div className="results-list">
-                    {results.map((result, index) => (
-                      <div key={result.id} className="result-item">
-                        <div className="result-header">
-                          <span className="result-number">#{index + 1}</span>
-                          <span className="result-path">{result.document_path}</span>
-                          <span className="result-score">{result.score.toFixed(3)}</span>
+                    {results.map((result, index) => {
+                      const isExpanded = expandedResults.has(result.id)
+                      return (
+                        <div key={result.id} className="result-item">
+                          <div 
+                            className="result-header clickable"
+                            onClick={() => toggleResultExpansion(result.id)}
+                            title="Click to expand/collapse"
+                          >
+                            <span className="result-expand-icon">
+                              {isExpanded ? '▼' : '▶'}
+                            </span>
+                            <span className="result-number">#{index + 1}</span>
+                            <span className="result-path">{result.document_path}</span>
+                            <span className="result-score">{result.score.toFixed(3)}</span>
+                          </div>
+                          {isExpanded && (
+                            <pre className="result-content">{result.content}</pre>
+                          )}
                         </div>
-                        <pre className="result-content">{result.content}</pre>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
