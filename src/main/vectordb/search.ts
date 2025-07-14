@@ -18,6 +18,15 @@ export interface HybridSearchOptions {
 }
 
 export class HybridSearch {
+  // Escape special characters for FTS5 queries
+  private escapeFTSQuery(query: string): string {
+    // Replace all double quotes with escaped double quotes
+    const escaped = query.replace(/"/g, '""')
+    // Wrap the entire query in double quotes to make it a phrase query
+    // This prevents special characters from being interpreted as FTS5 syntax
+    return `"${escaped}"`
+  }
+
   // Perform vector similarity search
   async vectorSearch(
     queryEmbedding: Float32Array,
@@ -58,6 +67,9 @@ export class HybridSearch {
 
     console.log('[HybridSearch] Performing FTS search for query:', query)
     
+    // Escape the query to prevent FTS5 syntax errors
+    const escapedQuery = this.escapeFTSQuery(query)
+    
     // Use FTS5 to search for matching chunks
     const results = db.prepare(`
       SELECT 
@@ -70,7 +82,7 @@ export class HybridSearch {
       AND chunks_fts MATCH ?
       ORDER BY rank
       LIMIT ?
-    `).all(repositoryId, query, limit) as Array<{ id: number; score: number }>
+    `).all(repositoryId, escapedQuery, limit) as Array<{ id: number; score: number }>
 
     // Normalize FTS scores to 0-1 range
     if (results.length > 0) {
