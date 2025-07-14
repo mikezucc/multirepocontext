@@ -49,7 +49,7 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showAllRepos, setShowAllRepos] = useState(false)
-  const [serverPort, setServerPort] = useState<number>(3000)
+  const [serverPort, setServerPort] = useState<number>(3989)
 
   useEffect(() => {
     // Get server port on mount

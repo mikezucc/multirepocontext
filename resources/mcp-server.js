@@ -10,7 +10,7 @@ const readline = require('readline');
 
 // Configuration from environment variables
 const CONFIG = {
-  serverPort: process.env.MDGENT_SERVER_PORT || '3000',
+  serverPort: process.env.MDGENT_SERVER_PORT || '3989',
   repositoryId: process.env.MDGENT_REPOSITORY_ID || '',
   repositoryPath: process.env.MDGENT_REPOSITORY_PATH || '',
   repositoryName: process.env.MDGENT_REPOSITORY_NAME || 'Unknown'

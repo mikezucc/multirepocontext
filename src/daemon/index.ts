@@ -882,7 +882,7 @@ Format the response as markdown suitable for a README file.`
         command: "node",
         args: [mcpServerPath],
         env: {
-          MDGENT_SERVER_PORT: (serverPort || 3000).toString(),
+          MDGENT_SERVER_PORT: (serverPort || 3989).toString(),
           MDGENT_REPOSITORY_ID: repositoryId,
           MDGENT_REPOSITORY_PATH: repository.path,
           MDGENT_REPOSITORY_NAME: repository.name
@@ -898,7 +898,7 @@ Format the response as markdown suitable for a README file.`
         command: "node",
         args: [mcpServerPath],
         env: {
-          MDGENT_SERVER_PORT: (serverPort || 3000).toString(),
+          MDGENT_SERVER_PORT: (serverPort || 3989).toString(),
           MDGENT_REPOSITORY_ID: repositoryId,
           MDGENT_REPOSITORY_PATH: repository.path,
           MDGENT_REPOSITORY_NAME: repository.name

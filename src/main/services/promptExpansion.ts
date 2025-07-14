@@ -91,7 +91,7 @@ IMPORTANT RULES:
     // Combine original prompt with expanded terms for enhanced search
     // The expanded terms are added with OR operators to broaden the search
     if (expandedTerms.length > 0) {
-      const expandedQuery = `${originalPrompt} ${expandedTerms.join(' ')}`
+      const expandedQuery = `${originalPrompt}. Related keywords: ${expandedTerms.join(' ')}`
       return expandedQuery
     }
     

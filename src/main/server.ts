@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid'
 export class SearchServer {
   private app: express.Application
   private server: Server | null = null
-  private port: number = 0 // Will be assigned dynamically
+  private port: number = 3989 // Fixed port to avoid conflicts and match CSP
 
   constructor() {
     this.app = express()
@@ -276,15 +276,18 @@ export class SearchServer {
   async start(): Promise<number> {
     return new Promise((resolve, reject) => {
       try {
-        // Start on a random available port
-        this.server = this.app.listen(0, '127.0.0.1', () => {
-          const address = this.server!.address()
-          if (typeof address === 'object' && address !== null) {
-            this.port = address.port
-            console.log(`[SearchServer] Server started on port ${this.port}`)
-            resolve(this.port)
+        // Start on fixed port 3989
+        this.server = this.app.listen(this.port, '127.0.0.1', () => {
+          console.log(`[SearchServer] Server started on port ${this.port}`)
+          resolve(this.port)
+        })
+        
+        this.server.on('error', (error: any) => {
+          if (error.code === 'EADDRINUSE') {
+            console.error(`[SearchServer] Port ${this.port} is already in use. Please close any other application using this port.`)
+            reject(new Error(`Port ${this.port} is already in use`))
           } else {
-            reject(new Error('Failed to get server address'))
+            reject(error)
           }
         })
       } catch (error) {

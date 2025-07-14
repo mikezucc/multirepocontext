@@ -25,7 +25,7 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
 
   // Generate Cursor deeplink for the current repository
   const generateCursorDeeplink = (repo: Repository) => {
-    const serverPort = 3000 // Default port
+    const serverPort = 3989 // Fixed port to match CSP
     const mcpServerPath = `${repo.path}/.mdgent/mcp/mdgent-mcp-server.js`
     
     const cursorConfig = {
