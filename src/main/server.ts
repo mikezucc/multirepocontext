@@ -203,9 +203,11 @@ export class SearchServer {
       try {
         const { limit = 100 } = req.query
         
+        console.log('[SearchServer] Getting all prompt history with limit:', limit)
         const history = promptHistoryStore.getAllPromptHistory(
           parseInt(limit as string)
         )
+        console.log('[SearchServer] Returning', history.length, 'history entries')
         
         res.json({
           success: true,

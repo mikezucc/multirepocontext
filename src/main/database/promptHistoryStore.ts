@@ -225,7 +225,20 @@ class PromptHistoryStore {
     `)
     
     try {
-      return stmt.all(limit) as PromptHistoryEntry[]
+      const results = stmt.all(limit) as PromptHistoryEntry[]
+      console.log(`[PromptHistoryStore] getAllPromptHistory returning ${results.length} entries (limit: ${limit})`)
+      
+      // Debug: show first few entries
+      if (results.length > 0) {
+        console.log('[PromptHistoryStore] First entry:', results[0])
+      }
+      
+      // Also check total count
+      const countStmt = this.db.prepare('SELECT COUNT(*) as count FROM prompt_history')
+      const totalCount = countStmt.get() as { count: number }
+      console.log(`[PromptHistoryStore] Total entries in database: ${totalCount.count}`)
+      
+      return results
     } catch (error) {
       console.error('Error getting all prompt history:', error)
       return []

@@ -66,19 +66,21 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
   }, [])
 
   const fetchHistory = async () => {
-    if (!repositoryId && !showAllRepos) return
-    
+    // Only skip if we're not showing all repos AND there's no repository selected
     setLoading(true)
     try {
       const url = showAllRepos 
         ? `http://localhost:${serverPort}/prompt-history`
         : `http://localhost:${serverPort}/prompt-history/${repositoryId}`
       
+      console.log('[PromptHistory] Fetching from URL:', url)
       const response = await fetch(url)
       const data = await response.json()
       
+      console.log('[PromptHistory] Received data:', data)
       if (data.success) {
         setHistory(data.history)
+        console.log('[PromptHistory] Set history with', data.history.length, 'entries')
       }
     } catch (error) {
       console.error('Failed to fetch prompt history:', error)
@@ -130,6 +132,7 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
   }
 
   useEffect(() => {
+    console.log('[PromptHistory] Repository ID or showAllRepos changed, fetching history', repositoryId, showAllRepos, serverPort);
     if (serverPort) {
       fetchHistory()
     }
