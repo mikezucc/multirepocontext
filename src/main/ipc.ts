@@ -600,7 +600,7 @@ export class IpcHandler {
         ...existingConfig,
         provider: settings.provider,
         apiKeys: {
-          ...existingConfig.apiKeys,
+          ...(existingConfig.apiKeys || {}),
           ...settings.apiKeys
         }
       }
@@ -613,12 +613,6 @@ export class IpcHandler {
       fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 2))
     } catch (e) {
       console.error('Failed to save provider settings:', e)
-    }
-  }
-
-  cleanup() {
-    if (this.daemon && !this.daemon.killed) {
-      this.daemon.kill()
     }
   }
 
