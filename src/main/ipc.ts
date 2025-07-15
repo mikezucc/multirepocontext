@@ -125,6 +125,20 @@ export class IpcHandler {
       this.sendToDaemon('configure', { apiKey: data.apiKey })
     })
 
+    ipcMain.on('get-provider-settings', async (event) => {
+      const settings = await this.getProviderSettings()
+      event.reply('provider-settings', settings)
+    })
+
+    ipcMain.on('set-provider-settings', async (event, data) => {
+      await this.setProviderSettings(data)
+      this.sendToDaemon('configure-provider', data)
+      
+      // Update prompt expansion service with new provider
+      const { promptExpansionService } = require('./services/promptExpansion')
+      await promptExpansionService.updateProviderSettings(data)
+    })
+
     ipcMain.on('get-server-port', (event) => {
       event.reply('server-port', this.serverPort)
     })
@@ -536,6 +550,26 @@ export class IpcHandler {
     }
   }
 
+  private async getProviderSettings(): Promise<any> {
+    try {
+      const configPath = path.join(process.env.HOME || '', '.mdgent', 'config.json')
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+      return {
+        provider: config.provider || 'anthropic',
+        apiKeys: {
+          anthropic: config.apiKey || config.apiKeys?.anthropic,
+          openai: config.apiKeys?.openai,
+          grok: config.apiKeys?.grok
+        }
+      }
+    } catch (e) {
+      return {
+        provider: 'anthropic',
+        apiKeys: {}
+      }
+    }
+  }
+
   private async setApiKey(apiKey: string) {
     const configDir = path.join(process.env.HOME || '', '.mdgent')
     const configPath = path.join(configDir, 'config.json')
@@ -545,6 +579,40 @@ export class IpcHandler {
       fs.writeFileSync(configPath, JSON.stringify({ apiKey }, null, 2))
     } catch (e) {
       console.error('Failed to save API key:', e)
+    }
+  }
+
+  private async setProviderSettings(settings: any) {
+    const configDir = path.join(process.env.HOME || '', '.mdgent')
+    const configPath = path.join(configDir, 'config.json')
+    
+    try {
+      fs.mkdirSync(configDir, { recursive: true })
+      let existingConfig = {}
+      try {
+        existingConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+      } catch (e) {
+        // Config doesn't exist yet
+      }
+      
+      // Merge settings with existing config
+      const newConfig = {
+        ...existingConfig,
+        provider: settings.provider,
+        apiKeys: {
+          ...existingConfig.apiKeys,
+          ...settings.apiKeys
+        }
+      }
+      
+      // Keep legacy apiKey field for backward compatibility
+      if (settings.apiKeys.anthropic) {
+        newConfig.apiKey = settings.apiKeys.anthropic
+      }
+      
+      fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 2))
+    } catch (e) {
+      console.error('Failed to save provider settings:', e)
     }
   }
 

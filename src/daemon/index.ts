@@ -57,6 +57,9 @@ class MDgentDaemon {
       case 'configure':
         this.configure(message.data)
         break
+      case 'configure-provider':
+        this.configureProvider(message.data)
+        break
       case 'add-repository':
         await this.addRepository(message.data)
         break
@@ -97,6 +100,26 @@ class MDgentDaemon {
       })
     } else {
       console.log('[DAEMON] WARNING: No API key provided')
+    }
+  }
+
+  private configureProvider(settings: any) {
+    console.log('[DAEMON] Configuring AI provider:', settings.provider)
+    // For now, the daemon only uses Anthropic for analysis
+    // The prompt expansion uses the configured provider
+    if (settings.provider === 'anthropic' && settings.apiKeys?.anthropic) {
+      console.log('[DAEMON] Anthropic API key received, initializing client')
+      this.anthropic = new Anthropic({
+        apiKey: settings.apiKeys.anthropic
+      })
+    } else if (settings.apiKeys?.anthropic) {
+      // Still use Anthropic for analysis even if another provider is selected for prompt expansion
+      console.log('[DAEMON] Using Anthropic for code analysis')
+      this.anthropic = new Anthropic({
+        apiKey: settings.apiKeys.anthropic
+      })
+    } else {
+      console.log('[DAEMON] WARNING: No Anthropic API key provided for code analysis')
     }
   }
 
