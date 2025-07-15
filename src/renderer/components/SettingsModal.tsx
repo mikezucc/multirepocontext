@@ -128,57 +128,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             />
           </div>
           
-          {provider !== 'anthropic' && apiKeys.anthropic && (
-            <div className="setting-group">
-              <label className="setting-label">
-                ANTHROPIC API KEY
-                <span className="setting-hint">Previously configured</span>
-              </label>
-              <input
-                type="password"
-                className="setting-input"
-                value={apiKeys.anthropic || ''}
-                onChange={e => updateApiKey('anthropic', e.target.value)}
-                placeholder="sk-ant-..."
-                disabled={isLoading}
-              />
-            </div>
-          )}
-          
-          {provider !== 'openai' && apiKeys.openai && (
-            <div className="setting-group">
-              <label className="setting-label">
-                OPENAI API KEY
-                <span className="setting-hint">Previously configured</span>
-              </label>
-              <input
-                type="password"
-                className="setting-input"
-                value={apiKeys.openai || ''}
-                onChange={e => updateApiKey('openai', e.target.value)}
-                placeholder="sk-..."
-                disabled={isLoading}
-              />
-            </div>
-          )}
-          
-          {provider !== 'grok' && apiKeys.grok && (
-            <div className="setting-group">
-              <label className="setting-label">
-                GROK API KEY
-                <span className="setting-hint">Previously configured</span>
-              </label>
-              <input
-                type="password"
-                className="setting-input"
-                value={apiKeys.grok || ''}
-                onChange={e => updateApiKey('grok', e.target.value)}
-                placeholder="xai-..."
-                disabled={isLoading}
-              />
-            </div>
-          )}
-          
           <div className="modal-footer">
             <button 
               className="modal-button secondary"
