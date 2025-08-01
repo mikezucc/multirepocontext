@@ -203,12 +203,44 @@ class MCPServer {
       return 'No relevant context found for the query.';
     }
 
+    // Deduplicate results by document (file path)
+    const documentMap = new Map();
+    
+    response.results.forEach(result => {
+      const documentKey = `${result.repositoryId || CONFIG.repositoryId}_${result.filePath}`;
+      
+      if (!documentMap.has(documentKey)) {
+        // First occurrence of this document - initialize with this result
+        documentMap.set(documentKey, {
+          ...result,
+          chunks: [result.content],
+          scores: [result.score],
+          mergedContent: result.content
+        });
+      } else {
+        // Document already exists - merge the chunks
+        const existing = documentMap.get(documentKey);
+        existing.chunks.push(result.content);
+        existing.scores.push(result.score);
+        
+        // Update the score to be the maximum score from all chunks
+        existing.score = Math.max(...existing.scores);
+        
+        // Merge content by removing duplicates and maintaining order
+        existing.mergedContent = this.mergeChunkContent(existing.chunks);
+      }
+    });
+
+    // Convert map to array and sort by score
+    const deduplicatedResults = Array.from(documentMap.values())
+      .sort((a, b) => b.score - a.score);
+
     let output = `# Relevant Context from MultiRepoContext\n\n`;
-    output += `Found ${response.results.length} relevant results:\n\n`;
+    output += `Found ${deduplicatedResults.length} relevant documents:\n\n`;
     
     // Group results by repository
     const resultsByRepo = {};
-    response.results.forEach(result => {
+    deduplicatedResults.forEach(result => {
       const repoName = result.repositoryName || CONFIG.repositoryName;
       if (!resultsByRepo[repoName]) {
         resultsByRepo[repoName] = [];
@@ -229,9 +261,12 @@ class MCPServer {
         if (result.repositoryName && result.repositoryName !== CONFIG.repositoryName) {
           output += `**Repository:** ${result.repositoryName}\n`;
         }
-        output += `**Relevance Score:** ${result.score.toFixed(3)}\n\n`;
-        output += '```\n';
-        output += result.content;
+        output += `**Relevance Score:** ${result.score.toFixed(3)}\n`;
+        if (result.chunks && result.chunks.length > 1) {
+          output += `**Note:** Combined ${result.chunks.length} relevant sections from this file\n`;
+        }
+        output += '\n```\n';
+        output += result.mergedContent;
         output += '\n```\n\n';
         
         if (result.metadata && result.metadata.headers && result.metadata.headers.length > 0) {
@@ -242,6 +277,60 @@ class MCPServer {
     });
 
     return output;
+  }
+
+  mergeChunkContent(chunks) {
+    // Remove exact duplicates first
+    const uniqueChunks = [...new Set(chunks)];
+    
+    if (uniqueChunks.length === 1) {
+      return uniqueChunks[0];
+    }
+    
+    // For multiple chunks, try to merge them intelligently
+    // by finding overlapping content and combining
+    let merged = uniqueChunks[0];
+    
+    for (let i = 1; i < uniqueChunks.length; i++) {
+      const chunk = uniqueChunks[i];
+      
+      // Check if chunk is already contained in merged
+      if (merged.includes(chunk)) {
+        continue;
+      }
+      
+      // Check if merged is contained in chunk
+      if (chunk.includes(merged)) {
+        merged = chunk;
+        continue;
+      }
+      
+      // Try to find overlap between end of merged and start of chunk
+      let overlap = this.findOverlap(merged, chunk);
+      if (overlap > 0) {
+        // Merge with overlap
+        merged = merged + chunk.substring(overlap);
+      } else {
+        // No overlap, append with separator
+        merged = merged + '\n\n// ... [additional section] ...\n\n' + chunk;
+      }
+    }
+    
+    return merged;
+  }
+
+  findOverlap(str1, str2) {
+    // Find the longest overlap between end of str1 and start of str2
+    const minOverlap = 20; // Minimum characters to consider an overlap
+    const maxOverlap = Math.min(str1.length, str2.length);
+    
+    for (let i = maxOverlap; i >= minOverlap; i--) {
+      if (str1.endsWith(str2.substring(0, i))) {
+        return i;
+      }
+    }
+    
+    return 0;
   }
 
   send(type, data, id = null) {
