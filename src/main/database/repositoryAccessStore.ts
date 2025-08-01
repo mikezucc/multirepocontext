@@ -1,6 +1,5 @@
 import Database from 'better-sqlite3'
-import * as path from 'path'
-import { app } from 'electron'
+import { getDatabase } from './database'
 
 export interface RepositoryAccessPermission {
   id?: number
@@ -23,34 +22,7 @@ class RepositoryAccessStore {
   private db: Database.Database
 
   constructor() {
-    const dbPath = path.join(app.getPath('userData'), 'mdgent.db')
-    this.db = new Database(dbPath)
-    this.initialize()
-  }
-
-  private initialize() {
-    // Enable foreign keys
-    this.db.pragma('foreign_keys = ON')
-    this.runMigration()
-  }
-
-  private runMigration() {
-    // The migration will be run by the main database initialization
-    // This is just to ensure the table exists
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS repository_access_permissions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        source_repository_id TEXT NOT NULL,
-        target_repository_id TEXT NOT NULL,
-        permission_type TEXT NOT NULL DEFAULT 'read',
-        granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        granted_by TEXT,
-        expires_at DATETIME,
-        FOREIGN KEY (source_repository_id) REFERENCES repositories(id) ON DELETE CASCADE,
-        FOREIGN KEY (target_repository_id) REFERENCES repositories(id) ON DELETE CASCADE,
-        UNIQUE(source_repository_id, target_repository_id, permission_type)
-      )
-    `)
+    this.db = getDatabase()
   }
 
   // Grant access from one repository to another

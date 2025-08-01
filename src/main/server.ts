@@ -8,6 +8,7 @@ import { promptExpansionService } from './services/promptExpansion'
 import { promptHistoryStore } from './database/promptHistoryStore'
 import { v4 as uuidv4 } from 'uuid'
 import { repositoryAccessStore } from './database/repositoryAccessStore'
+import { repositoryStore } from './database/repositoryStore'
 
 export class SearchServer {
   private app: express.Application
@@ -119,10 +120,9 @@ export class SearchServer {
         const repositoryNames = new Map<string, string>()
         for (const result of resultsWithContext) {
           if (result.repositoryId && !repositoryNames.has(result.repositoryId)) {
-            // Get repository name from database
-            const repo = vectorDB.getDatabase().prepare(
-              'SELECT name FROM repositories WHERE id = ?'
-            ).get(result.repositoryId) as { name: string } | undefined
+            // Get repository info from repository store
+            const repos = repositoryStore.getAllRepositories()
+            const repo = repos.find(r => r.id === result.repositoryId)
             if (repo) {
               repositoryNames.set(result.repositoryId, repo.name)
             }

@@ -1,6 +1,5 @@
 import Database from 'better-sqlite3'
-import * as path from 'path'
-import { app } from 'electron'
+import { getDatabase } from './database'
 
 interface StoredRepository {
   id: string
@@ -14,30 +13,7 @@ class RepositoryStore {
   private db: Database.Database
 
   constructor() {
-    const dbPath = path.join(app.getPath('userData'), 'mdgent.db')
-    this.db = new Database(dbPath)
-    this.initialize()
-  }
-
-  private initialize() {
-    // Enable foreign keys
-    this.db.pragma('foreign_keys = ON')
-    
-    // Create repositories table if it doesn't exist
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS repositories (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        path TEXT NOT NULL UNIQUE,
-        added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        last_opened DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `)
-
-    // Create index for faster path lookups
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_repositories_path ON repositories(path)
-    `)
+    this.db = getDatabase()
   }
 
   // Add a new repository
