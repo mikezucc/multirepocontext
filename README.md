@@ -1,11 +1,11 @@
-# MDgent
+# MultiRepoContext
 
 An AI-powered tribal knowledge documentation system that automatically generates comprehensive README files for different code regions, making codebases more accessible to AI coding assistants.
 
 ## Features
 
 - **AI-Powered Analysis**: Uses Anthropic's Claude API to understand code purpose and context
-- **Automatic Documentation**: Generates detailed info.mdgent.md files for code regions
+- **Automatic Documentation**: Generates detailed info.multirepocontext.md files for code regions
 - **Real-time Monitoring**: Watches for file changes and updates documentation incrementally
 - **Terminal Aesthetic**: Elegant retro terminal UI with master-detail layout
 - **Multi-Repository Support**: Manage documentation for multiple projects simultaneously
@@ -22,8 +22,8 @@ An AI-powered tribal knowledge documentation system that automatically generates
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/mdgent.git
-cd mdgent
+git clone https://github.com/yourusername/multirepocontext.git
+cd multirepocontext
 
 # Install dependencies
 npm install
@@ -44,16 +44,16 @@ npm run dist
 
 ## Usage
 
-1. Launch MDgent
+1. Launch MultiRepoContext
 2. Click "[+] Add Repository" to add a local repository
 3. Configure your Anthropic API key in settings
-4. MDgent will automatically analyze your codebase and generate documentation
+4. MultiRepoContext will automatically analyze your codebase and generate documentation
 5. Browse generated documentation in the detail pane
 
 ## Architecture
 
 - **Electron Desktop App**: Main UI for managing repositories
-- **MDgent Daemon**: Background process that watches files and orchestrates analysis
+- **MultiRepoContext Daemon**: Background process that watches files and orchestrates analysis
 - **LLM Integration**: Uses Claude API for intelligent code understanding
 - **File Watcher**: Monitors changes and triggers incremental updates
 

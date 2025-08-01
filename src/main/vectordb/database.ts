@@ -10,7 +10,7 @@ export class VectorDatabase {
   constructor() {
     // Store database in app's user data directory
     const userDataPath = app.getPath('userData')
-    this.dbPath = path.join(userDataPath, 'mdgent-vector.db')
+    this.dbPath = path.join(userDataPath, 'multirepocontext-vector.db')
   }
 
   async initialize(): Promise<void> {

@@ -1,4 +1,4 @@
-# MDgent Config Tab Test Plan
+# MultiRepoContext Config Tab Test Plan
 
 ## Test Steps
 
@@ -21,7 +21,7 @@
 5. **Test saving prompt**
    - Click "Save Changes" button
    - Should see "Prompt saved successfully!" message
-   - The custom prompt will be saved to `~/.mdgent/prompt-config.json`
+   - The custom prompt will be saved to `~/.multirepocontext/prompt-config.json`
 
 6. **Test reset functionality**
    - After making changes, click "Reset to Default"
@@ -45,4 +45,4 @@ The Config tab allows users to:
 - Reset to the default prompt
 - Use variables `{relativePath}` and `{content}` in their custom prompts
 
-The configuration is stored in `~/.mdgent/prompt-config.json` and is loaded by the daemon on startup.
+The configuration is stored in `~/.multirepocontext/prompt-config.json` and is loaded by the daemon on startup.

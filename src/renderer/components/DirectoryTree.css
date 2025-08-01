@@ -67,7 +67,7 @@
   color: var(--text-secondary);
 }
 
-.mdgent-indicator {
+.multirepocontext-indicator {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -75,7 +75,7 @@
   color: var(--text-secondary);
 }
 
-.mdgent-icon {
+.multirepocontext-icon {
   color: #4CAF50;
 }
 
@@ -163,7 +163,7 @@
   opacity: 0.8;
 }
 
-.has-mdgent {
+.has-multirepocontext {
   margin-left: 8px;
   color: #4CAF50;
 }
@@ -211,11 +211,11 @@
   to { transform: rotate(360deg); }
 }
 
-.mdgent-file .file-icon {
+.multirepocontext-file .file-icon {
   color: #4CAF50;
 }
 
-.mdgent-file .tree-name {
+.multirepocontext-file .tree-name {
   font-weight: 500;
   color: var(--text-bright);
   font-weight: 600;

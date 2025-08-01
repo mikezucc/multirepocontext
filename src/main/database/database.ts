@@ -6,7 +6,7 @@ let db: Database.Database | null = null
 
 export function getDatabase(): Database.Database {
   if (!db) {
-    const dbPath = path.join(app.getPath('userData'), 'mdgent.db')
+    const dbPath = path.join(app.getPath('userData'), 'multirepocontext.db')
     db = new Database(dbPath)
     
     // Enable foreign keys

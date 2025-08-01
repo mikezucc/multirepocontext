@@ -16,7 +16,7 @@ interface IpcMessage {
   data: any
 }
 
-class MDgentDaemon {
+class MultiRepoContextDaemon {
   private anthropic: Anthropic | null = null
   private watchers: Map<string, FSWatcher> = new Map()
   private repositories: Map<string, Repository> = new Map()
@@ -159,7 +159,7 @@ out
 .DS_Store
 .env
 .env.local
-*.mdgent.md
+*.multirepocontext.md
 `
       const compiled = gitignoreParser.compile(defaultIgnores)
       this.gitignores.set(repoPath, compiled)
@@ -190,13 +190,13 @@ out
           return true
         }
         
-        // Check MDgent ignore patterns
+        // Check MultiRepoContext ignore patterns
         if (ignorePatterns.some(pattern => this.matchesPattern(relativePath, pattern))) {
           return true
         }
         
         // Additional hard-coded ignores
-        const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.mdgent', '.DS_Store']
+        const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.multirepocontext', '.DS_Store']
         const parts = relativePath.split(path.sep)
         const fileName = path.basename(filePath)
         return parts.some(part => hardIgnores.includes(part)) || fileName === '.DS_Store'
@@ -394,7 +394,7 @@ out
 
   private async scanRepository(repoPath: string): Promise<string[]> {
     const files: string[] = []
-    // Only scan for .mdgent.md files for embeddings
+    // Only scan for .multirepocontext.md files for embeddings
     const gitignore = this.gitignores.get(repoPath)
     const maxFiles = 1000 // Limit total files to prevent memory issues
     
@@ -422,12 +422,12 @@ out
           }
           
           if (entry.isDirectory()) {
-            const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.cache', 'coverage', '.mdgent']
+            const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.cache', 'coverage', '.multirepocontext']
             if (!hardIgnores.includes(entry.name) && !entry.name.startsWith('.')) {
               await scan(fullPath, depth + 1)
             }
           } else if (entry.isFile()) {
-            // Only include .mdgent.md files for embeddings
+            // Only include .multirepocontext.md files for embeddings
             if (!ignorePatterns.some(pattern => this.matchesPattern(relativePath, pattern))) {
               files.push(fullPath)
             }
@@ -464,7 +464,7 @@ out
           }
           
           if (entry.isDirectory()) {
-            const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.cache', 'coverage', '.mdgent']
+            const hardIgnores = ['node_modules', '.git', 'dist', 'build', 'out', '.next', '.cache', 'coverage', '.multirepocontext']
             if (!hardIgnores.includes(entry.name)) {
               await scan(fullPath)
             }
@@ -472,7 +472,7 @@ out
             // Include all code files for documentation generation
             const ext = path.extname(entry.name).toLowerCase()
             const codeExtensions = ['.js', '.jsx', '.ts', '.tsx', '.py', '.java', '.go', '.rs', '.cpp', '.c', '.h', '.cs', '.rb', '.php', '.swift', '.kt', '.scala', '.r', '.m', '.mm']
-            if (codeExtensions.includes(ext) && !entry.name.endsWith('.mdgent.md')) {
+            if (codeExtensions.includes(ext) && !entry.name.endsWith('.multirepocontext.md')) {
               files.push(fullPath)
             }
           }
@@ -489,8 +489,8 @@ out
 
   private async regenerateEmbeddingsForDirectory(repositoryId: string, directoryPath: string) {
     try {
-      // Find all .mdgent.md files in the directory
-      const mdgentFiles: string[] = []
+      // Find all .multirepocontext.md files in the directory
+      const multirepocontextFiles: string[] = []
       
       const findMdgentFiles = async (dir: string): Promise<void> => {
         try {
@@ -505,21 +505,21 @@ out
               if (!skipDirs.includes(entry.name) && !entry.name.startsWith('.')) {
                 await findMdgentFiles(fullPath)
               }
-            } else if (entry.isFile() && entry.name.endsWith('.mdgent.md')) {
-              mdgentFiles.push(fullPath)
+            } else if (entry.isFile() && entry.name.endsWith('.multirepocontext.md')) {
+              multirepocontextFiles.push(fullPath)
             }
           }
         } catch (error) {
-          console.error('[DAEMON] Error scanning for mdgent files:', dir, error)
+          console.error('[DAEMON] Error scanning for multirepocontext files:', dir, error)
         }
       }
       
       await findMdgentFiles(directoryPath)
       
-      console.log(`[DAEMON] Found ${mdgentFiles.length} .mdgent.md files to index in directory`)
+      console.log(`[DAEMON] Found ${multirepocontextFiles.length} .multirepocontext.md files to index in directory`)
       
       // Send files for indexing
-      for (const file of mdgentFiles) {
+      for (const file of multirepocontextFiles) {
         try {
           const content = await fs.readFile(file, 'utf-8')
           this.sendMessage('index-file', {
@@ -536,8 +536,8 @@ out
       this.sendMessage('embeddings-status', {
         repositoryId,
         success: true,
-        filesProcessed: mdgentFiles.length,
-        message: `Successfully indexed ${mdgentFiles.length} files from ${path.basename(directoryPath)}`
+        filesProcessed: multirepocontextFiles.length,
+        message: `Successfully indexed ${multirepocontextFiles.length} files from ${path.basename(directoryPath)}`
       })
       
     } catch (error) {
@@ -557,7 +557,7 @@ out
       
       const relativePath = path.relative(repo.path, filePath)
       
-      // Skip MDgent-specific files
+      // Skip MultiRepoContext-specific files
       const ignorePatterns = await this.loadIgnorePatterns(repo.path)
       if (ignorePatterns.some(pattern => this.matchesPattern(relativePath, pattern))) {
         console.log('[DAEMON] Skipping ignored file:', relativePath)
@@ -566,8 +566,8 @@ out
       
       const content = await fs.readFile(filePath, 'utf-8')
       
-      // Only send .mdgent.md files for indexing (embeddings)
-      if (filePath.endsWith('.mdgent.md')) {
+      // Only send .multirepocontext.md files for indexing (embeddings)
+      if (filePath.endsWith('.multirepocontext.md')) {
         this.sendMessage('index-file', {
           repositoryId: repoId,
           filePath: filePath,
@@ -576,7 +576,7 @@ out
       }
       
       // Generate documentation if Anthropic client is available
-      if (this.anthropic && !filePath.endsWith('.mdgent.md')) {
+      if (this.anthropic && !filePath.endsWith('.multirepocontext.md')) {
         // Use custom prompt if available, otherwise use default
         const defaultPrompt = `You are a technical Product Manager who is compiling the tribal knowledge of the codebase. Analyze this code file and generate comprehensive documentation that serves to both describe the product and design considerations, as well as the detaield technical specifications.
 
@@ -656,7 +656,7 @@ Format the response as markdown suitable for a README file.`
       return
     }
     
-    const docPath = path.join(dir, 'info.mdgent.md')
+    const docPath = path.join(dir, 'info.multirepocontext.md')
     
     // Read existing documentation if it exists
     let existingContent = ''
@@ -704,16 +704,16 @@ Format the response as markdown suitable for a README file.`
 
   private onFileAdded(repoId: string, filePath: string) {
     console.log('[DAEMON] File added:', filePath)
-    // Only process .mdgent.md files for embeddings
-    if (filePath.endsWith('.mdgent.md')) {
+    // Only process .multirepocontext.md files for embeddings
+    if (filePath.endsWith('.multirepocontext.md')) {
       this.queueAnalysis(repoId, filePath)
     }
   }
 
   private onFileChanged(repoId: string, filePath: string) {
     console.log('[DAEMON] File changed:', filePath)
-    // Only process .mdgent.md files for embeddings
-    if (filePath.endsWith('.mdgent.md')) {
+    // Only process .multirepocontext.md files for embeddings
+    if (filePath.endsWith('.multirepocontext.md')) {
       this.queueAnalysis(repoId, filePath)
     }
   }
@@ -721,8 +721,8 @@ Format the response as markdown suitable for a README file.`
   private async onFileRemoved(repoId: string, filePath: string) {
     console.log('[DAEMON] File removed:', filePath)
     
-    // Only remove from index if it's a .mdgent.md file
-    if (filePath.endsWith('.mdgent.md')) {
+    // Only remove from index if it's a .multirepocontext.md file
+    if (filePath.endsWith('.multirepocontext.md')) {
       this.sendMessage('remove-indexed-file', {
         repositoryId: repoId,
         filePath: filePath
@@ -809,7 +809,7 @@ Format the response as markdown suitable for a README file.`
             name: entry.name,
             path: fullPath,  // Use absolute path instead of relative
             type: entry.isDirectory() ? 'directory' : 'file',
-            isMdgent: entry.name.endsWith('.mdgent.md'),
+            isMdgent: entry.name.endsWith('.multirepocontext.md'),
             modifiedTime: stats.mtime.getTime()
           }
           
@@ -829,7 +829,7 @@ Format the response as markdown suitable for a README file.`
           nodes.push(node)
         }
         
-        // Sort: directories first, then files, mdgent files highlighted
+        // Sort: directories first, then files, multirepocontext files highlighted
         nodes.sort((a, b) => {
           if (a.type !== b.type) return a.type === 'directory' ? -1 : 1
           if (a.isMdgent !== b.isMdgent) return a.isMdgent ? -1 : 1
@@ -859,11 +859,11 @@ Format the response as markdown suitable for a README file.`
     console.log('[DAEMON] Setting up MCP server for repository:', repository.path)
     
     try {
-      // Create .mdgent directory if it doesn't exist
-      const mdgentDir = path.join(repository.path, '.mdgent')
-      const mcpDir = path.join(mdgentDir, 'mcp')
+      // Create .multirepocontext directory if it doesn't exist
+      const multirepocontextDir = path.join(repository.path, '.multirepocontext')
+      const mcpDir = path.join(multirepocontextDir, 'mcp')
       
-      await fs.mkdir(mdgentDir, { recursive: true })
+      await fs.mkdir(multirepocontextDir, { recursive: true })
       await fs.mkdir(mcpDir, { recursive: true })
       
       // Also create .claude directory for Claude Code configuration
@@ -879,7 +879,7 @@ Format the response as markdown suitable for a README file.`
         : path.join(process.resourcesPath, 'resources/mcp-server.js')
       const mcpServerContent = await fs.readFile(mcpServerTemplatePath, 'utf-8')
       
-      const mcpServerPath = path.join(mcpDir, 'mdgent-mcp-server.js')
+      const mcpServerPath = path.join(mcpDir, 'multirepocontext-mcp-server.js')
       await fs.writeFile(mcpServerPath, mcpServerContent, { mode: 0o755 })
       
       // Check for existing .mcp.json and merge if it exists
@@ -900,8 +900,8 @@ Format the response as markdown suitable for a README file.`
         console.log('[DAEMON] No existing .mcp.json found, creating new one')
       }
 
-      // Add MDgent server to the configuration
-      rootMcpConfig.mcpServers["mdgent-rag"] = {
+      // Add MultiRepoContext server to the configuration
+      rootMcpConfig.mcpServers["multirepocontext-rag"] = {
         command: "node",
         args: [mcpServerPath],
         env: {
@@ -928,22 +928,22 @@ Format the response as markdown suitable for a README file.`
         }
       }
       const encodedConfig = Buffer.from(JSON.stringify(cursorConfig)).toString('base64')
-      const cursorDeeplink = `cursor://anysphere.cursor-deeplink/mcp/install?name=mdgent-rag&config=${encodedConfig}`
+      const cursorDeeplink = `cursor://anysphere.cursor-deeplink/mcp/install?name=multirepocontext-rag&config=${encodedConfig}`
       
-      // Create .mdgentignore file if it doesn't exist
-      const mdgentIgnorePath = path.join(repository.path, '.mdgentignore')
+      // Create .multirepocontextignore file if it doesn't exist
+      const multirepocontextIgnorePath = path.join(repository.path, '.multirepocontextignore')
       try {
-        await fs.access(mdgentIgnorePath)
-        console.log('[DAEMON] .mdgentignore already exists')
+        await fs.access(multirepocontextIgnorePath)
+        console.log('[DAEMON] .multirepocontextignore already exists')
       } catch (error) {
         // File doesn't exist, create it
-        const ignoreContent = `# MDgent ignore patterns
+        const ignoreContent = `# MultiRepoContext ignore patterns
 # Lines starting with # are comments
 # Patterns support * and ** wildcards
 
-# MDgent generated files
-*.mdgent.md
-.mdgent/**
+# MultiRepoContext generated files
+*.multirepocontext.md
+.multirepocontext/**
 .mcp.json
 CLAUDE.md
 .claude/**
@@ -974,14 +974,14 @@ __snapshots__/**
 
 # Custom patterns (add your own below)
 `
-        await fs.writeFile(mdgentIgnorePath, ignoreContent)
-        console.log('[DAEMON] Created .mdgentignore file')
+        await fs.writeFile(multirepocontextIgnorePath, ignoreContent)
+        console.log('[DAEMON] Created .multirepocontextignore file')
       }
       
       // Create README for MCP setup
-//       const readmeContent = `# MDgent MCP Server Setup
+//       const readmeContent = `# MultiRepoContext MCP Server Setup
 
-// This directory contains the MCP (Model Context Protocol) server configuration for MDgent.
+// This directory contains the MCP (Model Context Protocol) server configuration for MultiRepoContext.
 
 // ## Automatic Setup
 
@@ -991,14 +991,14 @@ __snapshots__/**
 
 // 1. A \`.mcp.json\` file has been created at the repository root
 // 2. Simply run \`claude\` in this directory or any subdirectory
-// 3. Claude Code will automatically load the MDgent RAG server
+// 3. Claude Code will automatically load the MultiRepoContext RAG server
 // 4. You'll be prompted to approve the server on first use
 
 // ### Cursor IDE
 
 // To install in Cursor:
 
-// 1. Click the "Install to Cursor" button in MDgent after setting up the MCP server
+// 1. Click the "Install to Cursor" button in MultiRepoContext after setting up the MCP server
 // 2. Or use this deeplink: \`${cursorDeeplink}\`
 // 3. Cursor will prompt you to approve the MCP server installation
 // 4. Once approved, you can use the \`search_context\` tool in Cursor
@@ -1020,7 +1020,7 @@ __snapshots__/**
 
 // ## Claude Code Integration
 
-// MDgent has automatically configured this repository for optimal Claude Code usage:
+// MultiRepoContext has automatically configured this repository for optimal Claude Code usage:
 
 // 1. **CLAUDE.md** - Created at the repository root with project-specific configuration
 // 2. **.claude/settings.json** - Contains Claude Code settings and context rules
@@ -1036,7 +1036,7 @@ __snapshots__/**
 // When you open this repository in Claude Code, it will automatically:
 // - Load the CLAUDE.md configuration
 // - Apply context inclusion/exclusion rules from .claude/settings.json
-// - Enable the MDgent search capabilities
+// - Enable the MultiRepoContext search capabilities
 
 // ### Search Examples
 // - "search_context: authentication flow"
@@ -1048,7 +1048,7 @@ __snapshots__/**
 // ## Files
 
 // ### MCP Server Files
-// - \`mdgent-mcp-server.js\` - The MCP server implementation
+// - \`multirepocontext-mcp-server.js\` - The MCP server implementation
 // - \`mcp-config.json\` - The configuration for manual Claude Desktop setup
 
 // ### Claude Code Files
@@ -1058,16 +1058,16 @@ __snapshots__/**
 
 // ## Benefits
 
-// With MDgent's Claude integration, you get:
+// With MultiRepoContext's Claude integration, you get:
 // 1. **Semantic Search**: Find code by meaning, not just text matching
-// 2. **AI-Generated Documentation**: Access .mdgent.md files for comprehensive code analysis
+// 2. **AI-Generated Documentation**: Access .multirepocontext.md files for comprehensive code analysis
 // 3. **Context-Aware Assistance**: Claude understands your project structure and dependencies
 // 4. **Efficient Navigation**: Quickly locate relevant code sections
 // `
       
       // await fs.writeFile(path.join(mcpDir, 'README.md'), readmeContent)
       
-      // Update .gitignore to include .mdgent/
+      // Update .gitignore to include .multirepocontext/
       await this.updateGitignore(repository.path)
       
       // Update CLAUDE.md for Claude Code environment (append if exists)
@@ -1078,8 +1078,8 @@ __snapshots__/**
       //   "tools": {
       //     "search_context": {
       //       "enabled": true,
-      //       "description": "Before every response no matter what, use this tool to search the MDgent vector database for relevant code context.",
-      //       "mcp_tool": "mdgent-rag"
+      //       "description": "Before every response no matter what, use this tool to search the MultiRepoContext vector database for relevant code context.",
+      //       "mcp_tool": "multirepocontext-rag"
       //     }
       //   },
       //   "context": {
@@ -1104,10 +1104,10 @@ __snapshots__/**
       //       "**/.git/**",
       //       "**/coverage/**",
       //       "**/*.min.js",
-      //       "**/*.mdgent.md"
+      //       "**/*.multirepocontext.md"
       //     ]
       //   },
-      //   "mdgent": {
+      //   "multirepocontext": {
       //     "server_port": serverPort || 3000,
       //     "repository_id": repositoryId,
       //     "mcp_enabled": true
@@ -1158,23 +1158,23 @@ __snapshots__/**
         console.log('[DAEMON] No .gitignore found, will create one')
       }
       
-      // Check if .mdgent/ is already in gitignore
+      // Check if .multirepocontext/ is already in gitignore
       const lines = gitignoreContent.split('\n')
-      const mdgentPatterns = ['.mdgent/', '.mdgent', '/.mdgent/']
+      const multirepocontextPatterns = ['.multirepocontext/', '.multirepocontext', '/.multirepocontext/']
       const hasRule = lines.some(line => 
-        mdgentPatterns.some(pattern => line.trim() === pattern || line.trim() === `/${pattern}`)
+        multirepocontextPatterns.some(pattern => line.trim() === pattern || line.trim() === `/${pattern}`)
       )
       
       if (!hasRule) {
-        // Add .mdgent/ to gitignore
+        // Add .multirepocontext/ to gitignore
         const newContent = gitignoreContent.trim() === '' 
-          ? '.mdgent/'
-          : gitignoreContent.trim() + '\n\n# MDgent files\n.mdgent/'
+          ? '.multirepocontext/'
+          : gitignoreContent.trim() + '\n\n# MultiRepoContext files\n.multirepocontext/'
         
         await fs.writeFile(gitignorePath, newContent + '\n')
-        console.log('[DAEMON] Added .mdgent/ to .gitignore')
+        console.log('[DAEMON] Added .multirepocontext/ to .gitignore')
       } else {
-        console.log('[DAEMON] .mdgent/ already in .gitignore')
+        console.log('[DAEMON] .multirepocontext/ already in .gitignore')
       }
     } catch (error) {
       console.error('[DAEMON] Error updating .gitignore:', error)
@@ -1193,26 +1193,26 @@ __snapshots__/**
         console.log('[DAEMON] No existing CLAUDE.md found')
       }
       
-      // Check if MDgent is already mentioned
-      const mdgentKeywords = ['mdgent', 'MDgent', 'Model Context Protocol', 'search_context']
-      const hasMdgentMention = mdgentKeywords.some(keyword => 
+      // Check if MultiRepoContext is already mentioned
+      const multirepocontextKeywords = ['multirepocontext', 'MultiRepoContext', 'Model Context Protocol', 'search_context']
+      const hasMdgentMention = multirepocontextKeywords.some(keyword => 
         existingContent.toLowerCase().includes(keyword.toLowerCase())
       )
       
       if (hasMdgentMention) {
-        console.log('[DAEMON] CLAUDE.md already contains MDgent information')
+        console.log('[DAEMON] CLAUDE.md already contains MultiRepoContext information')
         return
       }
       
-      // Append MDgent information
-      const mdgentSection = `
+      // Append MultiRepoContext information
+      const multirepocontextSection = `
 
-## MDgent Integration
+## MultiRepoContext Integration
 
-This repository is enhanced with MDgent's semantic search capabilities:
+This repository is enhanced with MultiRepoContext's semantic search capabilities:
 
 - **Vector Search**: Use \`search_context: <query>\` to find relevant code
-- **AI Documentation**: Check \`.mdgent.md\` files for comprehensive code analysis
+- **AI Documentation**: Check \`.multirepocontext.md\` files for comprehensive code analysis
 - **MCP Server**: Auto-loaded via \`.mcp.json\` in Claude Code
 
 ### Search Examples:
@@ -1223,10 +1223,10 @@ This repository is enhanced with MDgent's semantic search capabilities:
 
       const newContent = existingContent.trim() === ''
         ? await this.generateClaudeMdContent(repository)
-        : existingContent.trim() + mdgentSection
+        : existingContent.trim() + multirepocontextSection
       
       await fs.writeFile(claudeMdPath, newContent + '\n')
-      console.log('[DAEMON] Updated CLAUDE.md with MDgent information')
+      console.log('[DAEMON] Updated CLAUDE.md with MultiRepoContext information')
     } catch (error) {
       console.error('[DAEMON] Error updating CLAUDE.md:', error)
     }
@@ -1253,12 +1253,12 @@ ${projectInfo.technologies.map(tech => `- ${tech}`).join('\n')}
 
 ${projectInfo.scripts}
 
-## MDgent Integration
+## MultiRepoContext Integration
 
-This repository is enhanced with MDgent's semantic search capabilities:
+This repository is enhanced with MultiRepoContext's semantic search capabilities:
 
 - **Vector Search**: Use \`search_context: <query>\` to find relevant code
-- **AI Documentation**: Check \`.mdgent.md\` files for comprehensive code analysis
+- **AI Documentation**: Check \`.multirepocontext.md\` files for comprehensive code analysis
 - **MCP Server**: Auto-loaded via \`.mcp.json\` in Claude Code
 
 ### Search Examples:
@@ -1363,8 +1363,8 @@ This repository is enhanced with MDgent's semantic search capabilities:
 
   private async loadIgnorePatterns(repoPath: string): Promise<string[]> {
     const defaultPatterns = [
-      '*.mdgent.md',
-      '.mdgent/**',
+      '*.multirepocontext.md',
+      '.multirepocontext/**',
       '.mcp.json',
       'CLAUDE.md',
       '.claude/**',
@@ -1378,8 +1378,8 @@ This repository is enhanced with MDgent's semantic search capabilities:
     ]
     
     try {
-      // Check for .mdgentignore file
-      const ignorePath = path.join(repoPath, '.mdgentignore')
+      // Check for .multirepocontextignore file
+      const ignorePath = path.join(repoPath, '.multirepocontextignore')
       const ignoreContent = await fs.readFile(ignorePath, 'utf-8')
       const customPatterns = ignoreContent
         .split('\n')
@@ -1388,7 +1388,7 @@ This repository is enhanced with MDgent's semantic search capabilities:
       
       return [...defaultPatterns, ...customPatterns]
     } catch (error) {
-      // No .mdgentignore file, use defaults
+      // No .multirepocontextignore file, use defaults
       return defaultPatterns
     }
   }
@@ -1424,8 +1424,8 @@ This repository is enhanced with MDgent's semantic search capabilities:
       // Update status
       this.updateRepoStatus(repositoryId, 'analyzing')
       
-      // Find all .mdgent.md files
-      const mdgentFiles: string[] = []
+      // Find all .multirepocontext.md files
+      const multirepocontextFiles: string[] = []
       
       const findMdgentFiles = async (dir: string): Promise<void> => {
         try {
@@ -1440,8 +1440,8 @@ This repository is enhanced with MDgent's semantic search capabilities:
               if (!skipDirs.includes(entry.name) && !entry.name.startsWith('.')) {
                 await findMdgentFiles(fullPath)
               }
-            } else if (entry.isFile() && entry.name.endsWith('.mdgent.md')) {
-              mdgentFiles.push(fullPath)
+            } else if (entry.isFile() && entry.name.endsWith('.multirepocontext.md')) {
+              multirepocontextFiles.push(fullPath)
             }
           }
         } catch (error) {
@@ -1451,19 +1451,19 @@ This repository is enhanced with MDgent's semantic search capabilities:
       
       await findMdgentFiles(repository.path)
       
-      console.log(`[DAEMON] Found ${mdgentFiles.length} .mdgent.md files to index`)
+      console.log(`[DAEMON] Found ${multirepocontextFiles.length} .multirepocontext.md files to index`)
       
       // Send files for indexing
-      for (let i = 0; i < mdgentFiles.length; i++) {
-        const file = mdgentFiles[i]
+      for (let i = 0; i < multirepocontextFiles.length; i++) {
+        const file = multirepocontextFiles[i]
         
         // Send progress
         const progress: AnalysisProgress = {
           repositoryId,
           currentFile: file,
-          totalFiles: mdgentFiles.length,
+          totalFiles: multirepocontextFiles.length,
           processedFiles: i,
-          progress: (i / mdgentFiles.length) * 100,
+          progress: (i / multirepocontextFiles.length) * 100,
           tokensUsed: 0,
           estimatedCost: 0
         }
@@ -1496,8 +1496,8 @@ This repository is enhanced with MDgent's semantic search capabilities:
         this.sendMessage('embeddings-status', {
           repositoryId,
           success: true,
-          filesProcessed: mdgentFiles.length,
-          message: `Successfully regenerated embeddings for ${mdgentFiles.length} .mdgent.md files`
+          filesProcessed: multirepocontextFiles.length,
+          message: `Successfully regenerated embeddings for ${multirepocontextFiles.length} .multirepocontext.md files`
         })
       }, 2000) // Wait 2 seconds for indexing to complete
       
@@ -1515,7 +1515,7 @@ This repository is enhanced with MDgent's semantic search capabilities:
 
   private async loadPromptConfig() {
     try {
-      const configPath = path.join(process.env.HOME || '', '.mdgent', 'prompt-config.json')
+      const configPath = path.join(process.env.HOME || '', '.multirepocontext', 'prompt-config.json')
       const configData = await fs.readFile(configPath, 'utf-8')
       const config = JSON.parse(configData)
       this.customPrompt = config.prompt || null
@@ -1550,7 +1550,7 @@ Format the response as markdown suitable for a README file.`
 
   private async savePromptConfig(data: { prompt: string }) {
     try {
-      const configDir = path.join(process.env.HOME || '', '.mdgent')
+      const configDir = path.join(process.env.HOME || '', '.multirepocontext')
       const configPath = path.join(configDir, 'prompt-config.json')
       
       // Ensure config directory exists
@@ -1575,7 +1575,7 @@ Format the response as markdown suitable for a README file.`
 }
 
 // Start the daemon
-const daemon = new MDgentDaemon()
-console.log('[DAEMON] MDgent daemon started')
+const daemon = new MultiRepoContextDaemon()
+console.log('[DAEMON] MultiRepoContext daemon started')
 console.log('[DAEMON] Process ID:', process.pid)
 console.log('[DAEMON] Waiting for IPC messages...')

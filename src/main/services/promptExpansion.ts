@@ -19,7 +19,7 @@ class PromptExpansionService {
   }
 
   private async getProviderSettings(): Promise<AIProviderSettings> {
-    const configPath = path.join(os.homedir(), '.mdgent', 'config.json')
+    const configPath = path.join(os.homedir(), '.multirepocontext', 'config.json')
     try {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
       return {

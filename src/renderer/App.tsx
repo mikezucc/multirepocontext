@@ -172,7 +172,7 @@ function App() {
   return (
     <div className="app">
       <div className="titlebar">
-        <div className="title">MDgent v0.1.0</div>
+        <div className="title">MultiRepoContext v0.1.0</div>
         <TabBar
           repositories={repositories}
           selectedRepo={selectedRepo}

@@ -48,7 +48,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
         setTree(data.tree)
         setLoading(false)
         setError(null)
-        // Auto-expand directories with mdgent files
+        // Auto-expand directories with multirepocontext files
         autoExpandMdgentPaths(data.tree)
       }
     }
@@ -208,7 +208,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
             <span className="tree-icon">{isExpanded ? '▼' : '▶'}</span>
             <span className="tree-name">{node.name}</span>
             {node.children?.some(child => child.isMdgent) && (
-              <span className="has-mdgent">●</span>
+              <span className="has-multirepocontext">●</span>
             )}
             {(isHovered || isProcessing) && (
               <button
@@ -236,7 +236,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
     return (
       <div key={nodePath} className="tree-node">
         <div
-          className={`tree-item file ${node.isMdgent ? 'mdgent-file' : ''} ${isSelected ? 'selected' : ''} ${isSearchMatch ? 'search-match' : ''}`}
+          className={`tree-item file ${node.isMdgent ? 'multirepocontext-file' : ''} ${isSelected ? 'selected' : ''} ${isSearchMatch ? 'search-match' : ''}`}
           style={{ paddingLeft: `${level * 16}px` }}
           onClick={() => handleFileClick(node.path)}
         >

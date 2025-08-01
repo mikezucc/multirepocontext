@@ -37,7 +37,7 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
 
   // Load file content when a markdown file is selected
   useEffect(() => {
-    if (selectedFile && (selectedFile.endsWith('.md') || selectedFile.endsWith('.mdgent'))) {
+    if (selectedFile && (selectedFile.endsWith('.md') || selectedFile.endsWith('.multirepocontext'))) {
       window.electronAPI.send('read-file', { path: selectedFile })
     }
   }, [selectedFile])
@@ -128,7 +128,7 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
   const renderFileContent = () => {
     if (!selectedFile) return null
 
-    const isMarkdown = selectedFile.endsWith('.md') || selectedFile.endsWith('.mdgent')
+    const isMarkdown = selectedFile.endsWith('.md') || selectedFile.endsWith('.multirepocontext')
     
     if (isMarkdown && editMode) {
       return <MarkdownEditor filePath={selectedFile} content={fileContent} onSave={handleSaveFile} />

@@ -2,7 +2,7 @@
 
 ## Overview
 
-MDgent now persists user-selected repositories across app sessions using a SQLite database. When users reopen the app, their previously added repositories are automatically restored.
+MultiRepoContext now persists user-selected repositories across app sessions using a SQLite database. When users reopen the app, their previously added repositories are automatically restored.
 
 ## Implementation Details
 
@@ -59,6 +59,6 @@ CREATE TABLE repositories (
 ## Database Location
 
 The SQLite database is stored in the app's user data directory:
-- macOS: `~/Library/Application Support/mdgent/mdgent.db`
-- Windows: `%APPDATA%/mdgent/mdgent.db`
-- Linux: `~/.config/mdgent/mdgent.db`
+- macOS: `~/Library/Application Support/multirepocontext/multirepocontext.db`
+- Windows: `%APPDATA%/multirepocontext/multirepocontext.db`
+- Linux: `~/.config/multirepocontext/multirepocontext.db`

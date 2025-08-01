@@ -1,4 +1,4 @@
-# MDgent Demo
+# MultiRepoContext Demo
 
 ## Running the Application
 
@@ -7,9 +7,9 @@
    npm run dev
    ```
 
-2. The MDgent window will open with the terminal-style UI
+2. The MultiRepoContext window will open with the terminal-style UI
 
-## Using MDgent
+## Using MultiRepoContext
 
 ### Setting up API Key
 1. Click the settings button (⚙) in the top right
@@ -19,7 +19,7 @@
 ### Adding a Repository
 1. Click "[+] Add Repository" button
 2. Select a directory containing code
-3. MDgent will automatically start analyzing the codebase
+3. MultiRepoContext will automatically start analyzing the codebase
 
 ### Viewing Documentation
 1. Select a repository from the left panel
@@ -31,7 +31,7 @@
    - × Error
 
 ### Generated Files
-- MDgent creates `info.mdgent.md` files in each directory
+- MultiRepoContext creates `info.multirepocontext.md` files in each directory
 - These files contain AI-generated documentation for the code
 - Files are updated automatically when code changes
 
@@ -46,7 +46,7 @@
 └──────────────────┬──────────────────────────────┘
                    │ IPC
 ┌──────────────────┴──────────────────────────────┐
-│                MDgent Daemon                     │
+│                MultiRepoContext Daemon                     │
 │  - File Watching (Chokidar)                      │
 │  - Code Analysis (Anthropic API)                 │
 │  - Documentation Generation                      │

@@ -28,7 +28,7 @@ class PromptHistoryStore {
   private db: Database.Database
 
   constructor() {
-    const dbPath = path.join(app.getPath('userData'), 'mdgent.db')
+    const dbPath = path.join(app.getPath('userData'), 'multirepocontext.db')
     this.db = new Database(dbPath)
     
     // Run migration before initializing

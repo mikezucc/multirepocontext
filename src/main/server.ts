@@ -41,7 +41,7 @@ export class SearchServer {
   private setupRoutes(): void {
     // Health check endpoint
     this.app.get('/health', (req, res) => {
-      res.json({ status: 'ok', service: 'mdgent-search' })
+      res.json({ status: 'ok', service: 'multirepocontext-search' })
     })
 
     // Main search endpoint

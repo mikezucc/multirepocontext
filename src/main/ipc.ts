@@ -621,7 +621,7 @@ export class IpcHandler {
 
   private async getApiKey(): Promise<string | null> {
     try {
-      const configPath = path.join(process.env.HOME || '', '.mdgent', 'config.json')
+      const configPath = path.join(process.env.HOME || '', '.multirepocontext', 'config.json')
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
       return config.apiKey || null
     } catch (e) {
@@ -631,7 +631,7 @@ export class IpcHandler {
 
   private async getProviderSettings(): Promise<any> {
     try {
-      const configPath = path.join(process.env.HOME || '', '.mdgent', 'config.json')
+      const configPath = path.join(process.env.HOME || '', '.multirepocontext', 'config.json')
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
       return {
         provider: config.provider || 'anthropic',
@@ -650,7 +650,7 @@ export class IpcHandler {
   }
 
   private async setApiKey(apiKey: string) {
-    const configDir = path.join(process.env.HOME || '', '.mdgent')
+    const configDir = path.join(process.env.HOME || '', '.multirepocontext')
     const configPath = path.join(configDir, 'config.json')
     
     try {
@@ -662,7 +662,7 @@ export class IpcHandler {
   }
 
   private async setProviderSettings(settings: any) {
-    const configDir = path.join(process.env.HOME || '', '.mdgent')
+    const configDir = path.join(process.env.HOME || '', '.multirepocontext')
     const configPath = path.join(configDir, 'config.json')
     
     try {
@@ -825,7 +825,7 @@ export class IpcHandler {
       return
     }
 
-    const mcpServerPath = path.join(repositoryPath, '.mdgent', 'mcp', 'mdgent-mcp-server.js')
+    const mcpServerPath = path.join(repositoryPath, '.multirepocontext', 'mcp', 'multirepocontext-mcp-server.js')
     
     // Check if MCP server file exists
     if (!fs.existsSync(mcpServerPath)) {

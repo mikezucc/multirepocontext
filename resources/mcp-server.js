@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * MDgent MCP Server
- * Model Context Protocol server that provides RAG capabilities via the MDgent vector database
+ * MultiRepoContext MCP Server
+ * Model Context Protocol server that provides RAG capabilities via the MultiRepoContext vector database
  */
 
 const http = require('http');
@@ -10,10 +10,10 @@ const readline = require('readline');
 
 // Configuration from environment variables
 const CONFIG = {
-  serverPort: process.env.MDGENT_SERVER_PORT || '3989',
-  repositoryId: process.env.MDGENT_REPOSITORY_ID || '',
-  repositoryPath: process.env.MDGENT_REPOSITORY_PATH || '',
-  repositoryName: process.env.MDGENT_REPOSITORY_NAME || 'Unknown'
+  serverPort: process.env.MULTIREPOCONTEXT_SERVER_PORT || '3989',
+  repositoryId: process.env.MULTIREPOCONTEXT_REPOSITORY_ID || '',
+  repositoryPath: process.env.MULTIREPOCONTEXT_REPOSITORY_PATH || '',
+  repositoryName: process.env.MULTIREPOCONTEXT_REPOSITORY_NAME || 'Unknown'
 };
 
 // MCP protocol handler
@@ -50,7 +50,7 @@ class MCPServer {
         }
       },
       serverInfo: {
-        name: 'mdgent-rag',
+        name: 'multirepocontext-rag',
         version: '1.0.0'
       }
     };
@@ -87,7 +87,7 @@ class MCPServer {
         }
       },
       serverInfo: {
-        name: 'mdgent-rag',
+        name: 'multirepocontext-rag',
         version: '1.0.0'
       }
     }, id);
@@ -203,7 +203,7 @@ class MCPServer {
       return 'No relevant context found for the query.';
     }
 
-    let output = `# Relevant Context from MDgent\n\n`;
+    let output = `# Relevant Context from MultiRepoContext\n\n`;
     output += `Found ${response.results.length} relevant results:\n\n`;
     
     // Group results by repository

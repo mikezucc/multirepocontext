@@ -26,21 +26,21 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
   // Generate Cursor deeplink for the current repository
   const generateCursorDeeplink = (repo: Repository) => {
     const serverPort = 3989 // Fixed port to match CSP
-    const mcpServerPath = `${repo.path}/.mdgent/mcp/mdgent-mcp-server.js`
+    const mcpServerPath = `${repo.path}/.multirepocontext/mcp/multirepocontext-mcp-server.js`
     
     const cursorConfig = {
       command: "node",
       args: [mcpServerPath],
       env: {
-        MDGENT_SERVER_PORT: serverPort.toString(),
-        MDGENT_REPOSITORY_ID: repo.id,
-        MDGENT_REPOSITORY_PATH: repo.path,
-        MDGENT_REPOSITORY_NAME: repo.name
+        MULTIREPOCONTEXT_SERVER_PORT: serverPort.toString(),
+        MULTIREPOCONTEXT_REPOSITORY_ID: repo.id,
+        MULTIREPOCONTEXT_REPOSITORY_PATH: repo.path,
+        MULTIREPOCONTEXT_REPOSITORY_NAME: repo.name
       }
     }
     
     const encodedConfig = btoa(JSON.stringify(cursorConfig))
-    return `cursor://anysphere.cursor-deeplink/mcp/install?name=mdgent-rag&config=${encodedConfig}`
+    return `cursor://anysphere.cursor-deeplink/mcp/install?name=multirepocontext-rag&config=${encodedConfig}`
   }
 
   useEffect(() => {
@@ -154,7 +154,7 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
                 }
               }}
               style={{ marginTop: '8px' }}
-              title={isRegeneratingEmbeddings ? "Regenerating embeddings..." : "Regenerate embeddings for all .mdgent.md files"}
+              title={isRegeneratingEmbeddings ? "Regenerating embeddings..." : "Regenerate embeddings for all .multirepocontext.md files"}
               disabled={isRegeneratingEmbeddings}
             >
               {isRegeneratingEmbeddings ? '[⟳] Regenerating...' : '[↻] Regenerate Embeddings'}
