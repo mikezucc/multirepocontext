@@ -854,10 +854,10 @@ export class IpcHandler {
     const mcpProcess = spawn('node', [mcpServerPath], {
       env: {
         ...process.env,
-        MDGENT_SERVER_PORT: this.serverPort.toString(),
-        MDGENT_REPOSITORY_ID: repositoryId,
-        MDGENT_REPOSITORY_PATH: repositoryPath,
-        MDGENT_REPOSITORY_NAME: repositoryName
+        MULTIREPOCONTEXT_SERVER_PORT: this.serverPort.toString(),
+        MULTIREPOCONTEXT_REPOSITORY_ID: repositoryId,
+        MULTIREPOCONTEXT_REPOSITORY_PATH: repositoryPath,
+        MULTIREPOCONTEXT_REPOSITORY_NAME: repositoryName
       },
       stdio: ['pipe', 'pipe', 'pipe']
     })

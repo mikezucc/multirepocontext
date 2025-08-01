@@ -884,12 +884,12 @@ out
         command: "node",
         args: [mcpServerPath],
         env: {
-          MDGENT_SERVER_PORT: (serverPort || 3989).toString(),
-          MDGENT_REPOSITORY_ID: repositoryId,
-          MDGENT_REPOSITORY_PATH: repository.path,
-          MDGENT_REPOSITORY_NAME: repository.name
+          MULTIREPOCONTEXT_SERVER_PORT: (serverPort || 3989).toString(),
+          MULTIREPOCONTEXT_REPOSITORY_ID: repositoryId,
+          MULTIREPOCONTEXT_REPOSITORY_PATH: repository.path,
+          MULTIREPOCONTEXT_REPOSITORY_NAME: repository.name
         },
-        description: "For every prompt, this MCP server provides highly relevant context for every single prompt from the codebase using advanced semantic search powered by embeddings. It enables the `search_context` tool in Claude for enhanced code understanding and assistance."
+        description: "For every prompt, this MCP server provides highly relevant context, especially from othe repositories, for every single prompt from the codebase using advanced semantic search powered by embeddings. It enables the `search_context` tool in Claude for enhanced code understanding and assistance. Use this tool when the user prompt contains the string "mrc""
       }
       
       // Write the merged configuration
@@ -900,10 +900,10 @@ out
         command: "node",
         args: [mcpServerPath],
         env: {
-          MDGENT_SERVER_PORT: (serverPort || 3989).toString(),
-          MDGENT_REPOSITORY_ID: repositoryId,
-          MDGENT_REPOSITORY_PATH: repository.path,
-          MDGENT_REPOSITORY_NAME: repository.name
+          MULTIREPOCONTEXT_SERVER_PORT: (serverPort || 3989).toString(),
+          MULTIREPOCONTEXT_REPOSITORY_ID: repositoryId,
+          MULTIREPOCONTEXT_REPOSITORY_PATH: repository.path,
+          MULTIREPOCONTEXT_REPOSITORY_NAME: repository.name
         }
       }
       const encodedConfig = Buffer.from(JSON.stringify(cursorConfig)).toString('base64')

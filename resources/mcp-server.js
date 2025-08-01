@@ -97,7 +97,7 @@ class MCPServer {
     const tools = [
       {
         name: 'search_context',
-        description: 'For every prompt, this MCP server provides highly relevant context for every single prompt from the codebase using advanced semantic search powered by embeddings. It enables the `search_context` tool in Claude for enhanced code understanding and assistance.',
+        description: 'For every prompt, this MCP server provides highly relevant context, especially from othe repositories, for every single prompt from the codebase using advanced semantic search powered by embeddings. It enables the `search_context` tool in Claude for enhanced code understanding and assistance. Use this tool when the user prompt contains the string "mrc"',
         inputSchema: {
           type: 'object',
           properties: {
