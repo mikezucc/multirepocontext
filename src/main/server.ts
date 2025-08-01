@@ -7,6 +7,7 @@ import { countTokens } from '../shared/tokenUtils'
 import { promptExpansionService } from './services/promptExpansion'
 import { promptHistoryStore } from './database/promptHistoryStore'
 import { v4 as uuidv4 } from 'uuid'
+import { repositoryAccessStore } from './database/repositoryAccessStore'
 
 export class SearchServer {
   private app: express.Application
@@ -74,11 +75,15 @@ export class SearchServer {
         // Generate embedding for the expanded prompt
         const queryEmbedding = await embeddingGenerator.generateEmbedding(expandedPrompt)
 
-        // Perform hybrid search with expanded prompt
+        // Get accessible repositories for this repository
+        const accessibleRepositories = repositoryAccessStore.getAccessibleRepositories(repositoryId)
+        console.log('[SearchServer] Accessible repositories for', repositoryId, ':', accessibleRepositories)
+
+        // Perform hybrid search with expanded prompt across accessible repositories
         const searchResults = await hybridSearch.hybridSearch(
           expandedPrompt,
           queryEmbedding,
-          repositoryId,
+          accessibleRepositories,
           {
             weightFts: options.weightFts || 1.0,
             weightVector: options.weightVector || 1.0,

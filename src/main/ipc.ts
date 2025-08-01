@@ -6,6 +6,7 @@ import { createHash } from 'crypto'
 import { Repository } from '../shared/types'
 import { documentIndexer } from './vectordb/indexer'
 import { repositoryStore } from './database/repositoryStore'
+import { repositoryAccessStore } from './database/repositoryAccessStore'
 
 export class IpcHandler {
   private daemon: ChildProcess | null = null
@@ -353,6 +354,84 @@ export class IpcHandler {
         repositoryStore.updateLastOpened(id)
       } catch (error) {
         console.error('IPC: Error updating repository last opened:', error)
+      }
+    })
+
+    // Repository access permission handlers
+    ipcMain.on('get-repository-access-permissions', (event, data) => {
+      const { repositoryId } = data
+      try {
+        const permissions = repositoryAccessStore.getAllRepositoriesWithAccessStatus(repositoryId)
+        event.reply('repository-access-permissions', { 
+          success: true, 
+          permissions,
+          repositoryId 
+        })
+      } catch (error) {
+        console.error('IPC: Error getting repository access permissions:', error)
+        event.reply('repository-access-permissions', { 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        })
+      }
+    })
+
+    ipcMain.on('grant-repository-access', (event, data) => {
+      const { sourceRepositoryId, targetRepositoryId, grantedBy, expiresAt } = data
+      try {
+        repositoryAccessStore.grantAccess(
+          sourceRepositoryId, 
+          targetRepositoryId, 
+          grantedBy,
+          expiresAt ? new Date(expiresAt) : undefined
+        )
+        event.reply('grant-repository-access-result', { 
+          success: true,
+          sourceRepositoryId,
+          targetRepositoryId
+        })
+      } catch (error) {
+        console.error('IPC: Error granting repository access:', error)
+        event.reply('grant-repository-access-result', { 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        })
+      }
+    })
+
+    ipcMain.on('revoke-repository-access', (event, data) => {
+      const { sourceRepositoryId, targetRepositoryId } = data
+      try {
+        repositoryAccessStore.revokeAccess(sourceRepositoryId, targetRepositoryId)
+        event.reply('revoke-repository-access-result', { 
+          success: true,
+          sourceRepositoryId,
+          targetRepositoryId
+        })
+      } catch (error) {
+        console.error('IPC: Error revoking repository access:', error)
+        event.reply('revoke-repository-access-result', { 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        })
+      }
+    })
+
+    ipcMain.on('get-accessible-repositories', (event, data) => {
+      const { repositoryId } = data
+      try {
+        const accessibleRepos = repositoryAccessStore.getAccessibleRepositories(repositoryId)
+        event.reply('accessible-repositories', { 
+          success: true, 
+          repositories: accessibleRepos,
+          repositoryId 
+        })
+      } catch (error) {
+        console.error('IPC: Error getting accessible repositories:', error)
+        event.reply('accessible-repositories', { 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        })
       }
     })
   }

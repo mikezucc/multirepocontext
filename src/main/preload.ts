@@ -23,7 +23,11 @@ const api = {
       'debug-search',
       'reset-vector-database',
       'update-repository-opened',
-      'get-mcp-server-status'
+      'get-mcp-server-status',
+      'get-repository-access-permissions',
+      'grant-repository-access',
+      'revoke-repository-access',
+      'get-accessible-repositories'
     ]
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data)
@@ -47,7 +51,11 @@ const api = {
       'token-usage-update',
       'debug-search-results',
       'vector-database-reset',
-      'mcp-server-status'
+      'mcp-server-status',
+      'repository-access-permissions',
+      'grant-repository-access-result',
+      'revoke-repository-access-result',
+      'accessible-repositories'
     ]
     console.log('Preload: Setting up listener for channel:', channel);
     if (validChannels.includes(channel)) {

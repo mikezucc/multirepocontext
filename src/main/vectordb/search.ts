@@ -30,19 +30,25 @@ export class HybridSearch {
   // Perform vector similarity search
   async vectorSearch(
     queryEmbedding: Float32Array,
-    repositoryId: string,
+    repositoryIds: string | string[],
     limit: number = 20
   ): Promise<Array<{ id: number; score: number }>> {
     const db = vectorDB.getDatabase()
     
-    // Get all chunks for the repository with embeddings
+    // Convert single repository ID to array
+    const repoIds = Array.isArray(repositoryIds) ? repositoryIds : [repositoryIds]
+    
+    // Create placeholders for the IN clause
+    const placeholders = repoIds.map(() => '?').join(',')
+    
+    // Get all chunks for the repositories with embeddings
     const chunks = db.prepare(`
       SELECT c.id, c.embedding
       FROM chunks c
       JOIN documents d ON c.document_id = d.id
-      WHERE d.repository_id = ?
+      WHERE d.repository_id IN (${placeholders})
       AND c.embedding IS NOT NULL
-    `).all(repositoryId) as Array<{ id: number; embedding: Buffer }>
+    `).all(...repoIds) as Array<{ id: number; embedding: Buffer }>
 
     // Calculate cosine similarity for each chunk
     const results = chunks.map(chunk => {
@@ -60,12 +66,18 @@ export class HybridSearch {
   // Perform FTS5 full-text search
   async ftsSearch(
     query: string,
-    repositoryId: string,
+    repositoryIds: string | string[],
     limit: number = 20
   ): Promise<Array<{ id: number; score: number }>> {
     const db = vectorDB.getDatabase()
 
     console.log('[HybridSearch] Performing FTS search for query:', query)
+    
+    // Convert single repository ID to array
+    const repoIds = Array.isArray(repositoryIds) ? repositoryIds : [repositoryIds]
+    
+    // Create placeholders for the IN clause
+    const placeholders = repoIds.map(() => '?').join(',')
     
     // Escape the query to prevent FTS5 syntax errors
     const escapedQuery = this.escapeFTSQuery(query)
@@ -78,11 +90,11 @@ export class HybridSearch {
       FROM chunks_fts f
       JOIN chunks c ON f.rowid = c.id
       JOIN documents d ON c.document_id = d.id
-      WHERE d.repository_id = ?
+      WHERE d.repository_id IN (${placeholders})
       AND chunks_fts MATCH ?
       ORDER BY rank
       LIMIT ?
-    `).all(repositoryId, escapedQuery, limit) as Array<{ id: number; score: number }>
+    `).all(...repoIds, escapedQuery, limit) as Array<{ id: number; score: number }>
 
     // Normalize FTS scores to 0-1 range
     if (results.length > 0) {
@@ -97,7 +109,7 @@ export class HybridSearch {
   async hybridSearch(
     query: string,
     queryEmbedding: Float32Array,
-    repositoryId: string,
+    repositoryIds: string | string[],
     options: HybridSearchOptions = {}
   ): Promise<SearchResult[]> {
     const {
@@ -109,8 +121,8 @@ export class HybridSearch {
 
     // Perform both searches in parallel
     const [vectorResults, ftsResults] = await Promise.all([
-      this.vectorSearch(queryEmbedding, repositoryId, topK * 2),
-      this.ftsSearch(query, repositoryId, topK * 2)
+      this.vectorSearch(queryEmbedding, repositoryIds, topK * 2),
+      this.ftsSearch(query, repositoryIds, topK * 2)
     ])
 
     // Combine results using reciprocal rank fusion

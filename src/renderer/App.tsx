@@ -8,6 +8,7 @@ import MCPStatusIndicator from './components/MCPStatusIndicator'
 import { PromptDebugger } from './components/PromptDebugger'
 import { ConfigView } from './components/ConfigView'
 import { PromptHistory } from './components/PromptHistory'
+import { RepositoryAccessSettings } from './components/RepositoryAccessSettings'
 import { Repository } from '@shared/types'
 
 declare global {
@@ -36,7 +37,7 @@ function App() {
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [currentView, setCurrentView] = useState<'files' | 'debug' | 'config' | 'history'>('files')
+  const [currentView, setCurrentView] = useState<'files' | 'debug' | 'config' | 'history' | 'access'>('files')
   const [debugPrompt, setDebugPrompt] = useState<string>('')
   
   // Persistent debug state per repository
@@ -214,6 +215,24 @@ function App() {
           >
             History
           </button>
+          <button 
+            className={`view-btn ${currentView === 'access' ? 'active' : ''}`}
+            onClick={() => setCurrentView('access')}
+            style={{
+              padding: '4px 12px',
+              background: currentView === 'access' ? 'var(--text-primary)' : 'var(--bg-secondary)',
+              color: currentView === 'access' ? 'var(--bg-primary)' : 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontFamily: 'inherit',
+              WebkitAppRegion: 'no-drag' as any,
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Access
+          </button>
         </div>
         <MCPStatusIndicator 
           repositories={repositories}
@@ -244,12 +263,14 @@ function App() {
           repositoryId={selectedRepo?.id || null}
           repositoryName={selectedRepo?.name}
         />
-      ) : (
+      ) : currentView === 'history' ? (
         <PromptHistory
           repositoryId={selectedRepo?.id || null}
           repositoryName={selectedRepo?.name}
           onCopyPrompt={handleCopyPrompt}
         />
+      ) : (
+        <RepositoryAccessSettings activeRepository={selectedRepo} />
       )}
       <SettingsModal 
         isOpen={showSettings}
