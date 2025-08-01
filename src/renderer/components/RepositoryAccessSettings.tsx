@@ -103,9 +103,6 @@ export function RepositoryAccessSettings({ activeRepository }: RepositoryAccessS
     return (
       <div className="access-settings-container">
         <div className="access-empty-state">
-          <svg className="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
           <h3>No Repository Selected</h3>
           <p>Select a repository to manage its access permissions</p>
         </div>
@@ -142,9 +139,6 @@ export function RepositoryAccessSettings({ activeRepository }: RepositoryAccessS
       ) : (
         <>
           <div className="search-bar">
-            <svg className="search-icon" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-            </svg>
             <input
               type="text"
               placeholder="Search repositories..."
@@ -166,11 +160,6 @@ export function RepositoryAccessSettings({ activeRepository }: RepositoryAccessS
                   className={`repository-item ${repo.id === activeRepository.id ? 'current' : ''}`}
                 >
                   <div className="repo-info">
-                    <div className="repo-icon">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                      </svg>
-                    </div>
                     <div className="repo-details">
                       <h4 className="repo-name">{repo.name}</h4>
                       <p className="repo-path">{repo.path}</p>

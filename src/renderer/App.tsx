@@ -44,6 +44,7 @@ function App() {
   const [debugStates, setDebugStates] = useState<Record<string, DebugState>>({})
 
   const handleSelectRepo = (repo: Repository) => {
+    console.log('[App] Selecting repository:', repo.name, repo.id)
     setSelectedRepo(repo)
     // Update last opened timestamp
     window.electronAPI.send('update-repository-opened', { id: repo.id })
@@ -54,14 +55,41 @@ function App() {
 
     const handleRepoStatus = (repos: Repository[]) => {
       setRepositories(repos)
-      // Auto-select first repository if none selected and repos exist
-      if (!selectedRepo && repos.length > 0) {
-        handleSelectRepo(repos[0])
-      }
+      
+      // Only auto-select if we don't have a selection
+      setSelectedRepo(currentSelected => {
+        // If we have a current selection, check if it still exists
+        if (currentSelected) {
+          const stillExists = repos.find(r => r.id === currentSelected.id)
+          if (stillExists) {
+            // Update the selected repo with fresh data
+            return stillExists
+          }
+        }
+        
+        // If no selection or selection was removed, select first repo
+        if (repos.length > 0) {
+          // Use setTimeout to avoid immediate state updates
+          setTimeout(() => {
+            window.electronAPI.send('update-repository-opened', { id: repos[0].id })
+          }, 0)
+          return repos[0]
+        }
+        
+        return null
+      })
     }
 
     const handleRepoRemoved = (data: { id: string }) => {
       setRepositories(prev => prev.filter(r => r.id !== data.id))
+      
+      // If the removed repo was selected, clear selection
+      setSelectedRepo(current => {
+        if (current?.id === data.id) {
+          return null
+        }
+        return current
+      })
     }
 
     window.electronAPI.on('repository-status', handleRepoStatus)
@@ -79,9 +107,25 @@ function App() {
 
   const handleCloseRepo = (repo: Repository) => {
     window.electronAPI.send('remove-repository', { id: repo.id })
+    
+    // If closing the selected repo, select another one
     if (selectedRepo?.id === repo.id) {
+      const currentIndex = repositories.findIndex(r => r.id === repo.id)
       const remainingRepos = repositories.filter(r => r.id !== repo.id)
-      setSelectedRepo(remainingRepos.length > 0 ? remainingRepos[0] : null)
+      
+      if (remainingRepos.length > 0) {
+        // Try to select the repo at the same index, or the previous one
+        const newIndex = Math.min(currentIndex, remainingRepos.length - 1)
+        const newRepo = remainingRepos[Math.max(0, newIndex)]
+        setSelectedRepo(newRepo)
+        
+        // Update last opened for the new selection
+        setTimeout(() => {
+          window.electronAPI.send('update-repository-opened', { id: newRepo.id })
+        }, 0)
+      } else {
+        setSelectedRepo(null)
+      }
     }
   }
 
