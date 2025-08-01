@@ -206,17 +206,39 @@ class MCPServer {
     let output = `# Relevant Context from MDgent\n\n`;
     output += `Found ${response.results.length} relevant results:\n\n`;
     
-    response.results.forEach((result, index) => {
-      output += `## ${index + 1}. ${result.title || result.filePath}\n`;
-      output += `**File:** ${result.filePath}\n`;
-      output += `**Relevance Score:** ${result.score.toFixed(3)}\n\n`;
-      output += '```\n';
-      output += result.content;
-      output += '\n```\n\n';
-      
-      if (result.metadata && result.metadata.headers && result.metadata.headers.length > 0) {
-        output += `**Context:** ${result.metadata.headers.join(' > ')}\n\n`;
+    // Group results by repository
+    const resultsByRepo = {};
+    response.results.forEach(result => {
+      const repoName = result.repositoryName || CONFIG.repositoryName;
+      if (!resultsByRepo[repoName]) {
+        resultsByRepo[repoName] = [];
       }
+      resultsByRepo[repoName].push(result);
+    });
+    
+    // Display results grouped by repository
+    let resultIndex = 1;
+    Object.entries(resultsByRepo).forEach(([repoName, results]) => {
+      if (Object.keys(resultsByRepo).length > 1) {
+        output += `### Repository: ${repoName}\n\n`;
+      }
+      
+      results.forEach((result) => {
+        output += `## ${resultIndex}. ${result.title || result.filePath}\n`;
+        output += `**File:** ${result.filePath}\n`;
+        if (result.repositoryName && result.repositoryName !== CONFIG.repositoryName) {
+          output += `**Repository:** ${result.repositoryName}\n`;
+        }
+        output += `**Relevance Score:** ${result.score.toFixed(3)}\n\n`;
+        output += '```\n';
+        output += result.content;
+        output += '\n```\n\n';
+        
+        if (result.metadata && result.metadata.headers && result.metadata.headers.length > 0) {
+          output += `**Context:** ${result.metadata.headers.join(' > ')}\n\n`;
+        }
+        resultIndex++;
+      });
     });
 
     return output;

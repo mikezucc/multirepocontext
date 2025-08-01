@@ -115,6 +115,20 @@ export class SearchServer {
 
         const resultsWithContext = await Promise.all(contextPromises)
 
+        // Get repository names for the results
+        const repositoryNames = new Map<string, string>()
+        for (const result of resultsWithContext) {
+          if (result.repositoryId && !repositoryNames.has(result.repositoryId)) {
+            // Get repository name from database
+            const repo = vectorDB.getDatabase().prepare(
+              'SELECT name FROM repositories WHERE id = ?'
+            ).get(result.repositoryId) as { name: string } | undefined
+            if (repo) {
+              repositoryNames.set(result.repositoryId, repo.name)
+            }
+          }
+        }
+
         // Format response
         const response = {
           success: true,
@@ -125,7 +139,9 @@ export class SearchServer {
             title: r.title,
             score: r.score,
             content: r.expandedContext || r.content,
-            metadata: r.metadata
+            metadata: r.metadata,
+            repositoryId: r.repositoryId,
+            repositoryName: r.repositoryId ? repositoryNames.get(r.repositoryId) || 'Unknown' : repositoryName
           }))
         }
 

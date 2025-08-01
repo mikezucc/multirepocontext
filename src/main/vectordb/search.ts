@@ -8,6 +8,7 @@ export interface SearchResult {
   metadata: any
   filePath: string
   title: string
+  repositoryId?: string
 }
 
 export interface HybridSearchOptions {
@@ -163,7 +164,8 @@ export class HybridSearch {
         c.content,
         c.metadata,
         d.file_path as filePath,
-        d.title
+        d.title,
+        d.repository_id as repositoryId
       FROM chunks c
       JOIN documents d ON c.document_id = d.id
       WHERE c.id IN (${placeholders})
@@ -174,6 +176,7 @@ export class HybridSearch {
       metadata: string
       filePath: string
       title: string
+      repositoryId: string
     }>
 
     // Create final results with combined scores
@@ -184,7 +187,8 @@ export class HybridSearch {
       score: combinedScores.get(chunk.chunkId) || 0,
       metadata: JSON.parse(chunk.metadata || '{}'),
       filePath: chunk.filePath,
-      title: chunk.title
+      title: chunk.title,
+      repositoryId: chunk.repositoryId
     }))
 
     // Sort by score and filter
