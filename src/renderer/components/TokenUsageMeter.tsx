@@ -19,7 +19,7 @@ const TokenUsageMeter: React.FC = () => {
 
   useEffect(() => {
     // Request initial token usage stats
-    window.electronAPI.send('get-token-usage')
+    window.electronAPI.send('get-token-usage', {})
 
     // Listen for token usage updates
     const handleTokenUsageUpdate = (data: TokenUsageData) => {
@@ -33,7 +33,7 @@ const TokenUsageMeter: React.FC = () => {
 
     // Set up 3-second refresh interval
     const refreshInterval = setInterval(() => {
-      window.electronAPI.send('get-token-usage')
+      window.electronAPI.send('get-token-usage', {})
     }, 3000)
 
     return () => {

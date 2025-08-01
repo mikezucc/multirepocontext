@@ -151,7 +151,7 @@ export class DocumentChunker {
           language,
           startLine: i + 1,
           endLine: Math.min(i + chunkSize, lines.length),
-          filePath
+          ...(filePath ? { filePath } : {}) as any
         }
       }
       chunks.push(chunk)
@@ -221,7 +221,7 @@ export class DocumentChunker {
             chunkType: 'content',
             startLine: currentLine,
             endLine: currentLine + lines - 1,
-            filePath
+            ...(filePath ? { filePath } : {}) as any
           }
         })
         currentLine += lines + 2 // Account for paragraph breaks

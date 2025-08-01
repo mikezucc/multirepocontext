@@ -56,8 +56,8 @@ class PromptExpansionService {
       
       // Track token usage
       const providerName = this.provider.getProviderName().toLowerCase()
-      await vectorDB.trackTokenUsage(`${providerName}_api`, 'input', response.tokensUsed.input)
-      await vectorDB.trackTokenUsage(`${providerName}_api`, 'output', response.tokensUsed.output)
+      await vectorDB.trackTokenUsage(`${providerName}_api` as any, 'input', response.tokensUsed.input)
+      await vectorDB.trackTokenUsage(`${providerName}_api` as any, 'output', response.tokensUsed.output)
       
       console.log('[PromptExpansion] Provider:', providerName)
       console.log('[PromptExpansion] Original:', originalPrompt)

@@ -83,11 +83,13 @@ const DocumentationViewer: React.FC<DocumentationViewerProps> = ({
       // Configure marked with custom renderer
       marked.use({
         renderer: {
-          code(code: string, infostring: string | undefined) {
-            const lang = (infostring || '').match(/\S*/)?.[0] || ''
+          code(this: any, codeOrToken: any, infostring?: string | undefined) {
+            const code = typeof codeOrToken === 'string' ? codeOrToken : codeOrToken.text;
+            const language = typeof codeOrToken === 'string' ? infostring : codeOrToken.lang;
+            const lang = (language || infostring || '').match(/\S*/)?.[0] || ''
             
             // Escape HTML entities
-            const escapedCode = code.replace(/[&<>'"]/g, (char) => {
+            const escapedCode = code.replace(/[&<>'"]/g, (char: string) => {
               const escapeMap: {[key: string]: string} = {
                 '&': '&amp;',
                 '<': '&lt;',

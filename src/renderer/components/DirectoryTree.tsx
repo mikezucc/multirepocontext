@@ -176,7 +176,7 @@ const DirectoryTree: React.FC<DirectoryTreeProps> = ({ repositoryId, onFileSelec
     }
   }
 
-  const renderNode = (node: TreeNode, level = 0, parentPath = ''): JSX.Element | null => {
+  const renderNode = (node: TreeNode, level = 0, parentPath = ''): React.JSX.Element | null => {
     const nodePath = parentPath ? `${parentPath}/${node.name}` : node.name
     const isExpanded = expandedPaths.has(nodePath)
     const isSelected = selectedPath === nodePath

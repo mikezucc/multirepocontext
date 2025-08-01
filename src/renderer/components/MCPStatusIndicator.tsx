@@ -80,7 +80,7 @@ const MCPStatusIndicator: React.FC<MCPStatusIndicatorProps> = ({ repositories, s
         color: '#888',
         position: 'relative',
         cursor: 'help',
-        WebkitAppRegion: 'no-drag' as any,
+        ...(({ WebkitAppRegion: 'no-drag' }) as any),
       }}
     >
       <span 

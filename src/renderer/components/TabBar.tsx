@@ -120,7 +120,7 @@ const TabBar: React.FC<TabBarProps> = ({
         {visibleRepos.map((repo, index) => (
           <div
             key={repo.id}
-            ref={(el) => (tabRefs.current[index] = el)}
+            ref={(el) => { tabRefs.current[index] = el; }}
             className={`tab ${selectedRepo?.id === repo.id ? 'active' : ''}`}
             onClick={() => onSelectRepo(repo)}
           >
