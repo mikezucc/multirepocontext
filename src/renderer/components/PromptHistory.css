@@ -40,11 +40,13 @@
   display: flex;
   gap: 8px;
   flex: 1;
+  position: relative;
+  max-width: 300px;
 }
 
 .search-box input {
   flex: 1;
-  padding: 6px 12px;
+  padding: 6px 12px 6px 32px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background: var(--bg-primary);
@@ -52,20 +54,24 @@
   font-size: 14px;
 }
 
-.search-box button {
-  padding: 6px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.2s;
+.search-box input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-.search-box button:hover {
-  background: var(--bg-hover);
+.search-box::before {
+  content: "🔍";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  opacity: 0.5;
+  pointer-events: none;
 }
+
+/* Search button removed - using real-time filtering */
 
 .history-content {
   display: flex;

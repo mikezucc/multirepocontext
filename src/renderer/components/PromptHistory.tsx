@@ -44,6 +44,7 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
   onCopyPrompt 
 }) => {
   const [history, setHistory] = useState<PromptHistoryEntry[]>([])
+  const [filteredHistory, setFilteredHistory] = useState<PromptHistoryEntry[]>([])
   const [selectedEntry, setSelectedEntry] = useState<PromptHistoryEntry | null>(null)
   const [results, setResults] = useState<PromptResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -81,6 +82,7 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
       console.log('[PromptHistory] Received data:', data)
       if (data.success) {
         setHistory(data.history)
+        setFilteredHistory(data.history)
         console.log('[PromptHistory] Set history with', data.history.length, 'entries')
       }
     } catch (error) {
@@ -106,31 +108,7 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
     }
   }
 
-  const searchHistory = async () => {
-    if (!searchTerm.trim()) {
-      fetchHistory()
-      return
-    }
-    
-    setLoading(true)
-    try {
-      const params = new URLSearchParams({ q: searchTerm })
-      if (!showAllRepos && repositoryId) {
-        params.append('repositoryId', repositoryId)
-      }
-      
-      const response = await fetch(`http://localhost:${serverPort}/prompt-history/search?${params}`)
-      const data = await response.json()
-      
-      if (data.success) {
-        setHistory(data.history)
-      }
-    } catch (error) {
-      console.error('Failed to search prompt history:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Remove the searchHistory function since we're doing real-time client-side filtering
 
   useEffect(() => {
     console.log('[PromptHistory] Repository ID or showAllRepos changed, fetching history', repositoryId, showAllRepos, serverPort);
@@ -138,6 +116,19 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
       fetchHistory()
     }
   }, [repositoryId, showAllRepos, serverPort])
+
+  // Real-time filtering effect
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredHistory(history)
+    } else {
+      const filtered = history.filter(entry => 
+        entry.prompt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.repository_name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      setFilteredHistory(filtered)
+    }
+  }, [searchTerm, history])
 
   useEffect(() => {
     if (selectedEntry) {
@@ -208,9 +199,7 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
               placeholder="Search prompts..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && searchHistory()}
             />
-            <button onClick={searchHistory}>Search</button>
           </div>
         </div>
       </div>
@@ -223,8 +212,12 @@ export const PromptHistory: React.FC<PromptHistoryProps> = ({
             <div className="empty-state">
               No prompt history yet. Start searching to build your history!
             </div>
+          ) : filteredHistory.length === 0 ? (
+            <div className="empty-state">
+              No prompts match your search criteria.
+            </div>
           ) : (
-            history.map((entry) => (
+            filteredHistory.map((entry) => (
               <div
                 key={entry.id}
                 className={`history-entry ${selectedEntry?.id === entry.id ? 'selected' : ''}`}

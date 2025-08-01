@@ -604,7 +604,7 @@ Format the response as markdown suitable for a README file.`
         const inputTokens = countTokens(prompt)
         
         const response = await this.anthropic.messages.create({
-          model: 'claude-3-opus-20240229',
+          model: 'claude-3-7-sonnet-latest',
           max_tokens: 2000,
           messages: [{
             role: 'user',
