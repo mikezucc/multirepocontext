@@ -315,7 +315,7 @@ out
       console.log('[DAEMON] Repository analysis complete:', repo.path)
     } catch (error) {
       console.error('[DAEMON] Error analyzing repository:', error)
-      this.updateRepoStatus(repoId, 'error', error.message)
+      this.updateRepoStatus(repoId, 'error', error instanceof Error ? error.message : String(error))
     }
   }
 
@@ -400,7 +400,7 @@ out
         processedFiles: 0,
         tokensUsed: 0,
         estimatedCost: 0,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       })
     }
   }
@@ -591,7 +591,7 @@ out
       // Generate documentation if AI provider is available
       if (this.aiProvider && !filePath.endsWith('.multirepocontext.md')) {
         try {
-          const response = await this.aiProvider.analyzeCode(relativePath, content, this.customPrompt)
+          const response = await this.aiProvider.analyzeCode(relativePath, content, this.customPrompt || undefined)
           const { documentation, tokensUsed } = response
           
           // Send token usage to main process
@@ -1194,7 +1194,10 @@ __snapshots__/**
           }
         }
         
-        sourceExtensions.add('.js', '.jsx', '.ts', '.tsx')
+        sourceExtensions.add('.js')
+        sourceExtensions.add('.jsx')
+        sourceExtensions.add('.ts')
+        sourceExtensions.add('.tsx')
       } catch (e) {
         // No package.json
       }
@@ -1392,7 +1395,7 @@ __snapshots__/**
       
     } catch (error) {
       console.error('[DAEMON] Error regenerating embeddings:', error)
-      this.updateRepoStatus(repositoryId, 'error', error.message)
+      this.updateRepoStatus(repositoryId, 'error', error instanceof Error ? error.message : String(error))
       
       this.sendMessage('embeddings-status', {
         repositoryId,

@@ -43,7 +43,12 @@ function App() {
   // Persistent debug state per repository
   const [debugStates, setDebugStates] = useState<Record<string, DebugState>>({})
 
-  const handleSelectRepo = (repo: Repository) => {
+  const handleSelectRepo = (repo: Repository | null) => {
+    if (repo === null) {
+      console.log('[App] Clearing repository selection')
+      return
+    }
+    
     console.log('[App] Selecting repository:', repo.name, repo.id)
     setSelectedRepo(repo)
     // Update last opened timestamp
@@ -185,6 +190,7 @@ function App() {
           marginRight: '8px',
           display: 'flex',
           gap: '4px',
+          // @ts-ignore
           WebkitAppRegion: 'no-drag' as any
         }}>
           <button 
@@ -199,6 +205,7 @@ function App() {
               cursor: 'pointer',
               fontSize: '12px',
               fontFamily: 'inherit',
+              // @ts-ignore
               WebkitAppRegion: 'no-drag' as any,
               transition: 'all 0.2s ease'
             }}
@@ -217,6 +224,7 @@ function App() {
               cursor: 'pointer',
               fontSize: '12px',
               fontFamily: 'inherit',
+              // @ts-ignore
               WebkitAppRegion: 'no-drag' as any,
               transition: 'all 0.2s ease'
             }}
@@ -235,6 +243,7 @@ function App() {
               cursor: 'pointer',
               fontSize: '12px',
               fontFamily: 'inherit',
+              // @ts-ignore
               WebkitAppRegion: 'no-drag' as any,
               transition: 'all 0.2s ease'
             }}
@@ -253,6 +262,7 @@ function App() {
               cursor: 'pointer',
               fontSize: '12px',
               fontFamily: 'inherit',
+              // @ts-ignore
               WebkitAppRegion: 'no-drag' as any,
               transition: 'all 0.2s ease'
             }}
@@ -271,6 +281,7 @@ function App() {
               cursor: 'pointer',
               fontSize: '12px',
               fontFamily: 'inherit',
+              // @ts-ignore
               WebkitAppRegion: 'no-drag' as any,
               transition: 'all 0.2s ease'
             }}

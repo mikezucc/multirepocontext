@@ -669,7 +669,12 @@ export class IpcHandler {
     
     try {
       fs.mkdirSync(configDir, { recursive: true })
-      let existingConfig = {}
+      let existingConfig: {
+        apiKeys?: Record<string, string>;
+        apiKey?: string; // Legacy field for backward compatibility
+        provider?: string;
+        modelSettings?: Record<string, any>;
+      } = {}
       try {
         existingConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
       } catch (e) {

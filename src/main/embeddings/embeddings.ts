@@ -4,7 +4,7 @@ import { app } from 'electron'
 import fs from 'fs/promises'
 
 // Configure transformers.js
-env.localURL = path.join(app.getPath('userData'), 'models')
+env.localModelPath = path.join(app.getPath('userData'), 'models')
 env.allowRemoteModels = true
 env.allowLocalModels = true
 
@@ -20,11 +20,12 @@ export class EmbeddingGenerator {
       console.log('[Embeddings] Initializing embedding model...')
       
       // Ensure model directory exists
-      await fs.mkdir(env.localURL, { recursive: true })
+      await fs.mkdir(env.localModelPath, { recursive: true })
       
       // Load the embedding pipeline
       this.model = await pipeline('feature-extraction', this.modelName, {
-        quantized: true // Use quantized model for smaller size
+        dtype: 'q4', // Use quantized model for smaller size
+        device: 'webgpu'
       })
       
       this.isInitialized = true
@@ -84,7 +85,7 @@ export class EmbeddingGenerator {
   }
 
   // Clean up resources
-  async dispose(): void {
+  async dispose() {
     if (this.model) {
       // Transformers.js doesn't have explicit dispose, but we can null the reference
       this.model = null
