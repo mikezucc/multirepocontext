@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import ReactDOM from 'react-dom'
 import { Repository } from '@shared/types'
 import { ChevronDown } from 'lucide-react'
 import './TabBar.css'
@@ -20,8 +21,10 @@ const TabBar: React.FC<TabBarProps> = ({
 }) => {
   const [showOverflowMenu, setShowOverflowMenu] = useState(false)
   const [visibleTabs, setVisibleTabs] = useState<number>(repositories.length)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const tabsContainerRef = useRef<HTMLDivElement>(null)
   const tabRefs = useRef<(HTMLDivElement | null)[]>([])
+  const overflowButtonRef = useRef<HTMLButtonElement>(null)
   const getStatusClass = (status: Repository['status']) => {
     switch (status) {
       case 'scanning':
@@ -80,6 +83,37 @@ const TabBar: React.FC<TabBarProps> = ({
   const hiddenRepos = repositories.slice(visibleTabs)
   const visibleRepos = repositories.slice(0, visibleTabs)
 
+  const handleOverflowClick = () => {
+    if (overflowButtonRef.current) {
+      const rect = overflowButtonRef.current.getBoundingClientRect()
+      setMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.left
+      })
+    }
+    setShowOverflowMenu(!showOverflowMenu)
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      const menuElement = document.querySelector('.tab-overflow-menu')
+      
+      if (showOverflowMenu && 
+          overflowButtonRef.current && 
+          !overflowButtonRef.current.contains(target) &&
+          menuElement &&
+          !menuElement.contains(target)) {
+        setShowOverflowMenu(false)
+      }
+    }
+
+    if (showOverflowMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showOverflowMenu])
+
   return (
     <div className="tab-bar">
       <div className="tabs-container" ref={tabsContainerRef}>
@@ -107,47 +141,14 @@ const TabBar: React.FC<TabBarProps> = ({
         {hiddenRepos.length > 0 && (
           <div className="tab-overflow-container">
             <button
+              ref={overflowButtonRef}
               className="tab-overflow-button"
-              onClick={() => setShowOverflowMenu(!showOverflowMenu)}
+              onClick={handleOverflowClick}
               title="Show more repositories"
             >
               <span>{hiddenRepos.length} more</span>
               <ChevronDown size={14} />
             </button>
-            
-            {showOverflowMenu && (
-              <div 
-                className="tab-overflow-menu"
-                onMouseLeave={() => setShowOverflowMenu(false)}
-              >
-                {hiddenRepos.map((repo) => {
-                  const isActive = selectedRepo?.id === repo.id
-                  return (
-                    <div
-                      key={repo.id}
-                      className={`tab-overflow-item ${isActive ? 'active' : ''}`}
-                      onClick={() => {
-                        onSelectRepo(repo)
-                        setShowOverflowMenu(false)
-                      }}
-                    >
-                      <span className={`tab-status ${getStatusClass(repo.status)}`}></span>
-                      <span className="tab-overflow-title">{repo.name}</span>
-                      <button
-                        className="tab-overflow-close"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onCloseRepo(repo)
-                          setShowOverflowMenu(false)
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
           </div>
         )}
         
@@ -155,6 +156,45 @@ const TabBar: React.FC<TabBarProps> = ({
           +
         </button>
       </div>
+      
+      {showOverflowMenu && ReactDOM.createPortal(
+        <div 
+          className="tab-overflow-menu"
+          style={{
+            position: 'fixed',
+            top: `${menuPosition.top}px`,
+            left: `${menuPosition.left}px`
+          }}
+        >
+          {hiddenRepos.map((repo) => {
+            const isActive = selectedRepo?.id === repo.id
+            return (
+              <div
+                key={repo.id}
+                className={`tab-overflow-item ${isActive ? 'active' : ''}`}
+                onClick={() => {
+                  onSelectRepo(repo)
+                  setShowOverflowMenu(false)
+                }}
+              >
+                <span className={`tab-status ${getStatusClass(repo.status)}`}></span>
+                <span className="tab-overflow-title">{repo.name}</span>
+                <button
+                  className="tab-overflow-close"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onCloseRepo(repo)
+                    setShowOverflowMenu(false)
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            )
+          })}
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

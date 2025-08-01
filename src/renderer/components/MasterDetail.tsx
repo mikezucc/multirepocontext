@@ -112,18 +112,19 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
             )}
             <button 
               className="scan-btn"
+              title="Analyzes the entire repository and generates context files"
               onClick={() => window.electronAPI.send('scan-repository', { id: selectedRepo.id })}
               disabled={selectedRepo.status === 'scanning' || selectedRepo.status === 'analyzing'}
             >
               {selectedRepo.status === 'scanning' || selectedRepo.status === 'analyzing' 
-                ? '[◧] Scanning...' 
-                : '[►] Scan Repository'}
+                ? '[◧] Analyzing...' 
+                : '[►] Analyze Repository'}
             </button>
             <button 
               className="scan-btn"
               onClick={() => window.electronAPI.send('setup-mcp-server', { id: selectedRepo.id })}
               style={{ marginTop: '8px' }}
-              title="Setup MCP server configuration for enhanced context retrieval"
+              title="Installs MCP server configuration for enhanced context retrieval"
             >
               [⚙] Setup MCP Server
             </button>
@@ -134,7 +135,7 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
               style={{ marginTop: '8px' }}
               title="Install MCP server in Cursor IDE"
             >
-              [↗] Install to Cursor
+              [↗] Install MCP to Cursor
             </button>
             
             {showMcpSuccess && (

@@ -1049,9 +1049,6 @@ __snapshots__/**
       // Update .gitignore to include .multirepocontext/
       await this.updateGitignore(repository.path)
       
-      // Update CLAUDE.md for Claude Code environment (append if exists)
-      await this.updateClaudeMd(repository)
-      
       // Create .claude/settings.json for additional Claude Code configuration
       // const claudeSettings = {
       //   "tools": {
@@ -1158,93 +1155,6 @@ __snapshots__/**
     } catch (error) {
       console.error('[DAEMON] Error updating .gitignore:', error)
     }
-  }
-
-  private async updateClaudeMd(repository: Repository): Promise<void> {
-    try {
-      const claudeMdPath = path.join(repository.path, 'CLAUDE.md')
-      let existingContent = ''
-      
-      // Check if CLAUDE.md exists
-      try {
-        existingContent = await fs.readFile(claudeMdPath, 'utf-8')
-      } catch (error) {
-        console.log('[DAEMON] No existing CLAUDE.md found')
-      }
-      
-      // Check if MultiRepoContext is already mentioned
-      const multirepocontextKeywords = ['multirepocontext', 'MultiRepoContext', 'Model Context Protocol', 'search_context']
-      const hasMdgentMention = multirepocontextKeywords.some(keyword => 
-        existingContent.toLowerCase().includes(keyword.toLowerCase())
-      )
-      
-      if (hasMdgentMention) {
-        console.log('[DAEMON] CLAUDE.md already contains MultiRepoContext information')
-        return
-      }
-      
-      // Append MultiRepoContext information
-      const multirepocontextSection = `
-
-## MultiRepoContext Integration
-
-This repository is enhanced with MultiRepoContext's semantic search capabilities:
-
-- **Vector Search**: Use \`search_context: <query>\` to find relevant code
-- **AI Documentation**: Check \`.multirepocontext.md\` files for comprehensive code analysis
-- **MCP Server**: Auto-loaded via \`.mcp.json\` in Claude Code
-
-### Search Examples:
-- \`search_context: authentication\`
-- \`search_context: database schema\`
-- \`search_context: error handling\`
-`
-
-      const newContent = existingContent.trim() === ''
-        ? await this.generateClaudeMdContent(repository)
-        : existingContent.trim() + multirepocontextSection
-      
-      await fs.writeFile(claudeMdPath, newContent + '\n')
-      console.log('[DAEMON] Updated CLAUDE.md with MultiRepoContext information')
-    } catch (error) {
-      console.error('[DAEMON] Error updating CLAUDE.md:', error)
-    }
-  }
-
-  private async generateClaudeMdContent(repository: Repository): Promise<string> {
-    const repoName = path.basename(repository.path)
-    const gitignore = this.gitignores.get(repository.path)
-    
-    // Analyze repository structure
-    const projectInfo = await this.analyzeProjectStructure(repository.path)
-    
-    return `# ${repoName}
-
-## Project Overview
-
-${projectInfo.structure}
-
-## Key Technologies
-
-${projectInfo.technologies.map(tech => `- ${tech}`).join('\n')}
-
-## Development Commands
-
-${projectInfo.scripts}
-
-## MultiRepoContext Integration
-
-This repository is enhanced with MultiRepoContext's semantic search capabilities:
-
-- **Vector Search**: Use \`search_context: <query>\` to find relevant code
-- **AI Documentation**: Check \`.multirepocontext.md\` files for comprehensive code analysis
-- **MCP Server**: Auto-loaded via \`.mcp.json\` in Claude Code
-
-### Search Examples:
-- \`search_context: authentication\`
-- \`search_context: database schema\`
-- \`search_context: error handling\`
-`
   }
 
   private async analyzeProjectStructure(repoPath: string): Promise<{

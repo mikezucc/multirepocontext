@@ -1,4 +1,4 @@
-import { pipeline, env } from '@xenova/transformers'
+import { pipeline, env } from '@huggingface/transformers'
 import path from 'path'
 import { app } from 'electron'
 import fs from 'fs/promises'
