@@ -20,10 +20,8 @@ const TabBar: React.FC<TabBarProps> = ({
   onAddRepo
 }) => {
   const [showOverflowMenu, setShowOverflowMenu] = useState(false)
-  const [visibleTabs, setVisibleTabs] = useState<number>(repositories.length)
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const tabsContainerRef = useRef<HTMLDivElement>(null)
-  const tabRefs = useRef<(HTMLDivElement | null)[]>([])
   const overflowButtonRef = useRef<HTMLButtonElement>(null)
   const getStatusClass = (status: Repository['status']) => {
     switch (status) {
@@ -39,49 +37,11 @@ const TabBar: React.FC<TabBarProps> = ({
     }
   }
 
-  useEffect(() => {
-    const calculateVisibleTabs = () => {
-      if (!tabsContainerRef.current) return
+  // Removed complex visibility calculation as we only show one repo at a time
 
-      const containerWidth = tabsContainerRef.current.offsetWidth
-      const addButtonWidth = 36
-      const overflowButtonWidth = 100
-      const tabGap = 4
-      let availableWidth = containerWidth - addButtonWidth - tabGap
-
-      let visibleCount = 0
-      let totalWidth = 0
-
-      for (let i = 0; i < repositories.length; i++) {
-        const tabElement = tabRefs.current[i]
-        if (!tabElement) continue
-
-        const tabWidth = tabElement.scrollWidth + tabGap
-        
-        if (totalWidth + tabWidth + overflowButtonWidth <= availableWidth || i === 0) {
-          totalWidth += tabWidth
-          visibleCount++
-        } else {
-          break
-        }
-      }
-
-      setVisibleTabs(Math.max(1, visibleCount))
-    }
-
-    calculateVisibleTabs()
-    const resizeObserver = new ResizeObserver(calculateVisibleTabs)
-    if (tabsContainerRef.current) {
-      resizeObserver.observe(tabsContainerRef.current)
-    }
-
-    return () => {
-      resizeObserver.disconnect()
-    }
-  }, [repositories.length])
-
-  const hiddenRepos = repositories.slice(visibleTabs)
-  const visibleRepos = repositories.slice(0, visibleTabs)
+  // Show only the selected repository
+  const visibleRepos = selectedRepo ? [selectedRepo] : []
+  const hiddenRepos = repositories
 
   const handleOverflowClick = () => {
     if (overflowButtonRef.current) {
@@ -120,7 +80,6 @@ const TabBar: React.FC<TabBarProps> = ({
         {visibleRepos.map((repo, index) => (
           <div
             key={repo.id}
-            ref={(el) => { tabRefs.current[index] = el; }}
             className={`tab ${selectedRepo?.id === repo.id ? 'active' : ''}`}
             onClick={() => onSelectRepo(repo)}
           >
@@ -138,15 +97,16 @@ const TabBar: React.FC<TabBarProps> = ({
           </div>
         ))}
         
-        {hiddenRepos.length > 0 && (
+        {repositories.length > 0 && (
           <div className="tab-overflow-container">
             <button
               ref={overflowButtonRef}
               className="tab-overflow-button"
               onClick={handleOverflowClick}
-              title="Show more repositories"
+              title="Select repository"
+              style={{ marginLeft: visibleRepos.length === 0 ? 0 : 4 }}
             >
-              <span>{hiddenRepos.length} more</span>
+              <span>{visibleRepos.length === 0 ? 'Select repository' : 'Change'}</span>
               <ChevronDown size={14} />
             </button>
           </div>
@@ -166,7 +126,7 @@ const TabBar: React.FC<TabBarProps> = ({
             left: `${menuPosition.left}px`
           }}
         >
-          {hiddenRepos.map((repo) => {
+          {repositories.map((repo) => {
             const isActive = selectedRepo?.id === repo.id
             return (
               <div
@@ -176,6 +136,7 @@ const TabBar: React.FC<TabBarProps> = ({
                   onSelectRepo(repo)
                   setShowOverflowMenu(false)
                 }}
+                style={{ fontWeight: isActive ? 'bold' : 'normal' }}
               >
                 <span className={`tab-status ${getStatusClass(repo.status)}`}></span>
                 <span className="tab-overflow-title">{repo.name}</span>

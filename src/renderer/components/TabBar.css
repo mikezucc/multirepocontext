@@ -24,8 +24,8 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  max-width: 200px;
-  min-width: 120px;
+  max-width: 250px;
+  min-width: 150px;
   position: relative;
   user-select: none;
 }

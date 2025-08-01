@@ -174,7 +174,14 @@ const MasterDetail: React.FC<MasterDetailProps> = ({
           </div>
         ) : (
           <div className="empty-state">
-            <div className="empty-text">Select a repository tab</div>
+            <div className="empty-text">No repository selected</div>
+            <button 
+              className="scan-btn"
+              onClick={onAddRepo}
+              style={{ marginTop: '16px' }}
+            >
+              [+] Add Repository
+            </button>
           </div>
         )}
       </div>
