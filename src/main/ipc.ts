@@ -639,12 +639,14 @@ export class IpcHandler {
           anthropic: config.apiKey || config.apiKeys?.anthropic,
           openai: config.apiKeys?.openai,
           grok: config.apiKeys?.grok
-        }
+        },
+        modelSettings: config.modelSettings || {}
       }
     } catch (e) {
       return {
         provider: 'anthropic',
-        apiKeys: {}
+        apiKeys: {},
+        modelSettings: {}
       }
     }
   }
@@ -681,6 +683,10 @@ export class IpcHandler {
         apiKeys: {
           ...(existingConfig.apiKeys || {}),
           ...settings.apiKeys
+        },
+        modelSettings: {
+          ...(existingConfig.modelSettings || {}),
+          ...settings.modelSettings
         }
       }
       

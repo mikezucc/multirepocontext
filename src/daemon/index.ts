@@ -5,6 +5,9 @@ import { promises as fs } from 'fs'
 import { Repository, Documentation, AnalysisProgress } from '../shared/types'
 import * as gitignoreParser from 'gitignore-parser'
 import { countTokens } from '../shared/tokenUtils'
+import { AIProviderSettings } from '../shared/types/aiProvider'
+import { DaemonAIProviderBase } from './aiProviders/base'
+import { DaemonAIProviderFactory } from './aiProviders/factory'
 
 interface DaemonConfig {
   apiKey: string
@@ -18,6 +21,7 @@ interface IpcMessage {
 
 class MultiRepoContextDaemon {
   private anthropic: Anthropic | null = null
+  private aiProvider: DaemonAIProviderBase | null = null
   private watchers: Map<string, FSWatcher> = new Map()
   private repositories: Map<string, Repository> = new Map()
   private analysisQueue: string[] = []
@@ -27,6 +31,7 @@ class MultiRepoContextDaemon {
   private watchDepth = 3 // Maximum directory depth to watch
   private gitignores: Map<string, any> = new Map()
   private customPrompt: string | null = null
+  private providerSettings: AIProviderSettings | null = null
 
   constructor() {
     this.setupIpc()
@@ -98,28 +103,36 @@ class MultiRepoContextDaemon {
       this.anthropic = new Anthropic({
         apiKey: config.apiKey
       })
+      // Keep backward compatibility - create provider from API key
+      this.providerSettings = {
+        provider: 'anthropic',
+        apiKeys: { anthropic: config.apiKey }
+      }
+      this.aiProvider = DaemonAIProviderFactory.createProvider(this.providerSettings)
     } else {
       console.log('[DAEMON] WARNING: No API key provided')
     }
   }
 
-  private configureProvider(settings: any) {
+  private configureProvider(settings: AIProviderSettings) {
     console.log('[DAEMON] Configuring AI provider:', settings.provider)
-    // For now, the daemon only uses Anthropic for analysis
-    // The prompt expansion uses the configured provider
-    if (settings.provider === 'anthropic' && settings.apiKeys?.anthropic) {
-      console.log('[DAEMON] Anthropic API key received, initializing client')
-      this.anthropic = new Anthropic({
-        apiKey: settings.apiKeys.anthropic
-      })
-    } else if (settings.apiKeys?.anthropic) {
-      // Still use Anthropic for analysis even if another provider is selected for prompt expansion
-      console.log('[DAEMON] Using Anthropic for code analysis')
-      this.anthropic = new Anthropic({
-        apiKey: settings.apiKeys.anthropic
-      })
+    this.providerSettings = settings
+    
+    // Create the AI provider based on settings
+    this.aiProvider = DaemonAIProviderFactory.createProvider(settings)
+    
+    if (this.aiProvider) {
+      console.log('[DAEMON] Successfully configured', this.aiProvider.getProviderName(), 'provider')
+      console.log('[DAEMON] Using model:', this.aiProvider.getModel())
     } else {
-      console.log('[DAEMON] WARNING: No Anthropic API key provided for code analysis')
+      console.log('[DAEMON] WARNING: Failed to configure AI provider')
+    }
+    
+    // Keep backward compatibility with Anthropic client
+    if (settings.apiKeys?.anthropic) {
+      this.anthropic = new Anthropic({
+        apiKey: settings.apiKeys.anthropic
+      })
     }
   }
 
@@ -253,9 +266,9 @@ out
       console.log('[DAEMON] Repository not found:', repoId)
       return
     }
-    if (!this.anthropic) {
-      console.log('[DAEMON] Cannot analyze - Anthropic client not initialized (missing API key?)')
-      this.updateRepoStatus(repoId, 'error', 'API key not configured')
+    if (!this.aiProvider) {
+      console.log('[DAEMON] Cannot analyze - AI provider not initialized (missing API key?)')
+      this.updateRepoStatus(repoId, 'error', 'API provider not configured')
       return
     }
 
@@ -309,8 +322,8 @@ out
   private async analyzeDirectory(data: { repositoryId: string; directoryPath: string; repository: Repository }) {
     const { repositoryId, directoryPath, repository } = data
     
-    if (!this.anthropic) {
-      console.log('[DAEMON] Cannot analyze - Anthropic client not initialized (missing API key?)')
+    if (!this.aiProvider) {
+      console.log('[DAEMON] Cannot analyze - AI provider not initialized (missing API key?)')
       this.sendMessage('analysis-progress', {
         repositoryId,
         currentFile: directoryPath,
@@ -319,7 +332,7 @@ out
         processedFiles: 0,
         tokensUsed: 0,
         estimatedCost: 0,
-        error: 'API key not configured'
+        error: 'AI provider not configured'
       })
       return
     }
@@ -575,66 +588,32 @@ out
         })
       }
       
-      // Generate documentation if Anthropic client is available
-      if (this.anthropic && !filePath.endsWith('.multirepocontext.md')) {
-        // Use custom prompt if available, otherwise use default
-        const defaultPrompt = `You are a technical Product Manager who is compiling the tribal knowledge of the codebase. Analyze this code file and generate comprehensive documentation that serves to both describe the product and design considerations, as well as the detaield technical specifications.
+      // Generate documentation if AI provider is available
+      if (this.aiProvider && !filePath.endsWith('.multirepocontext.md')) {
+        try {
+          const response = await this.aiProvider.analyzeCode(relativePath, content, this.customPrompt)
+          const { documentation, tokensUsed } = response
+          
+          // Send token usage to main process
+          this.sendMessage('track-token-usage', {
+            source: `${this.aiProvider.getProviderName().toLowerCase()}_api`,
+            input: tokensUsed.input,
+            output: tokensUsed.output
+          })
 
-File: ${relativePath}
+          await this.saveDocumentation(repoId, filePath, documentation)
+          console.log('[DAEMON] Successfully analyzed:', relativePath, `(${tokensUsed.input} in, ${tokensUsed.output} out tokens)`)
 
-\`\`\`
-${content}
-\`\`\`
-
-Please provide:
-1. A clear description of the file's purpose and role in the codebase
-2. List of all public interfaces, classes, and functions with their signatures
-3. Dependencies and imports that other parts of the codebase might need
-4. Usage examples if applicable
-5. Any important implementation details or design decisions
-
-Format the response as markdown suitable for a README file.`
-
-        // Replace placeholders in custom prompt
-        let prompt = this.customPrompt || defaultPrompt
-        prompt = prompt.replace(/{relativePath}/g, relativePath)
-        prompt = prompt.replace(/{content}/g, content)
-
-        // Count input tokens
-        const inputTokens = countTokens(prompt)
-        
-        const response = await this.anthropic.messages.create({
-          model: 'claude-3-7-sonnet-latest',
-          max_tokens: 2000,
-          messages: [{
-            role: 'user',
-            content: prompt
-          }]
-        })
-
-        const documentation = response.content[0].type === 'text' 
-          ? response.content[0].text 
-          : ''
-        
-        // Count output tokens
-        const outputTokens = countTokens(documentation)
-        
-        // Send token usage to main process
-        this.sendMessage('track-token-usage', {
-          source: 'anthropic_api',
-          input: inputTokens,
-          output: outputTokens
-        })
-
-        await this.saveDocumentation(repoId, filePath, documentation)
-        console.log('[DAEMON] Successfully analyzed:', relativePath, `(${inputTokens} in, ${outputTokens} out tokens)`)
-
-        // index the file into the vector database as well
-        this.sendMessage('index-file', {
-          repositoryId: repoId,
-          filePath: filePath,
-          content: documentation
-        })
+          // index the file into the vector database as well
+          this.sendMessage('index-file', {
+            repositoryId: repoId,
+            filePath: filePath,
+            content: documentation
+          })
+        } catch (error) {
+          console.error('[DAEMON] Error analyzing file with AI provider:', error)
+          throw error
+        }
       } else {
         console.log('[DAEMON] File sent for indexing:', filePath)
       }

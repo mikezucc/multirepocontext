@@ -14,6 +14,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     openai?: string
     grok?: string
   }>({})
+  const [modelSettings, setModelSettings] = useState<{
+    anthropic?: { model?: string }
+    openai?: { model?: string }
+    grok?: { model?: string }
+  }>({})
+  const [useCustomModel, setUseCustomModel] = useState<{
+    anthropic?: boolean
+    openai?: boolean
+    grok?: boolean
+  }>({})
   const [isLoading, setIsLoading] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
 
@@ -25,6 +35,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
       const handleProviderSettings = (settings: AIProviderSettings) => {
         setProvider(settings.provider || 'anthropic')
         setApiKeys(settings.apiKeys || {})
+        setModelSettings(settings.modelSettings || {})
+        
+        // Check if any models are custom (not in the predefined list)
+        const customModels: typeof useCustomModel = {}
+        if (settings.modelSettings) {
+          Object.entries(settings.modelSettings).forEach(([provider, config]) => {
+            if (config?.model) {
+              const availableModels = getAvailableModels(provider as AIProvider)
+              customModels[provider as AIProvider] = !availableModels.includes(config.model)
+            }
+          })
+        }
+        setUseCustomModel(customModels)
       }
       
       window.electronAPI.on('provider-settings', handleProviderSettings)
@@ -51,7 +74,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     // Save provider settings
     const settings: AIProviderSettings = {
       provider,
-      apiKeys
+      apiKeys,
+      modelSettings
     }
     window.electronAPI.send('set-provider-settings', settings)
     
@@ -74,6 +98,29 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     setApiKeys(prev => ({ ...prev, [providerName]: value }))
   }
 
+  const updateModel = (providerName: AIProvider, value: string) => {
+    if (value === 'custom') {
+      setUseCustomModel(prev => ({ ...prev, [providerName]: true }))
+      setModelSettings(prev => ({ 
+        ...prev, 
+        [providerName]: { ...prev[providerName], model: '' }
+      }))
+    } else {
+      setUseCustomModel(prev => ({ ...prev, [providerName]: false }))
+      setModelSettings(prev => ({ 
+        ...prev, 
+        [providerName]: { ...prev[providerName], model: value }
+      }))
+    }
+  }
+
+  const updateCustomModel = (providerName: AIProvider, value: string) => {
+    setModelSettings(prev => ({ 
+      ...prev, 
+      [providerName]: { ...prev[providerName], model: value }
+    }))
+  }
+
   const getPlaceholder = (providerName: AIProvider): string => {
     switch (providerName) {
       case 'anthropic':
@@ -82,6 +129,30 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         return 'sk-...'
       case 'grok':
         return 'xai-...'
+    }
+  }
+
+  const getAvailableModels = (providerName: AIProvider): string[] => {
+    switch (providerName) {
+      case 'anthropic':
+        return ['claude-3-7-sonnet-latest', 'claude-3-5-sonnet-latest', 'claude-3-haiku-latest', 'claude-3-5-haiku-latest']
+      case 'openai':
+        return ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo']
+      case 'grok':
+        return ['grok-beta', 'grok-2-beta']
+      default:
+        return []
+    }
+  }
+
+  const getDefaultModel = (providerName: AIProvider): string => {
+    switch (providerName) {
+      case 'anthropic':
+        return 'claude-3-7-sonnet-latest'
+      case 'openai':
+        return 'gpt-4o-mini'
+      case 'grok':
+        return 'grok-beta'
     }
   }
 
@@ -126,6 +197,47 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
               placeholder={getPlaceholder(provider)}
               disabled={isLoading}
             />
+          </div>
+          
+          <div className="setting-group">
+            <label className="setting-label">
+              MODEL OVERRIDE
+              <span className="setting-hint">Optional: Override the default model for code analysis</span>
+            </label>
+            {!useCustomModel[provider] ? (
+              <select 
+                className="setting-input"
+                value={modelSettings[provider]?.model || ''}
+                onChange={e => updateModel(provider, e.target.value)}
+                disabled={isLoading}
+              >
+                <option value="">Default ({getDefaultModel(provider)})</option>
+                {getAvailableModels(provider).map(model => (
+                  <option key={model} value={model}>{model}</option>
+                ))}
+                <option value="custom">Custom (enter manually)</option>
+              </select>
+            ) : (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  className="setting-input"
+                  style={{ flex: 1 }}
+                  value={modelSettings[provider]?.model || ''}
+                  onChange={e => updateCustomModel(provider, e.target.value)}
+                  placeholder={`Enter custom ${provider} model name`}
+                  disabled={isLoading}
+                />
+                <button
+                  className="modal-button secondary"
+                  style={{ padding: '8px 16px', minWidth: 'auto' }}
+                  onClick={() => updateModel(provider, '')}
+                  disabled={isLoading}
+                >
+                  Back
+                </button>
+              </div>
+            )}
           </div>
           
           <div className="modal-footer">
