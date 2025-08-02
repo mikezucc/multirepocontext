@@ -10,6 +10,13 @@ let ipcHandler: IpcHandler | null = null
 let serverPort: number = 0
 
 function createWindow(): void {
+  // Set the icon path based on environment
+  const iconPath = is.dev 
+    ? join(__dirname, '../../src/AppIcon.icns')
+    : process.platform === 'darwin'
+      ? undefined // macOS uses icon from app bundle
+      : join(process.resourcesPath, '../build/icon.png')
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -18,6 +25,7 @@ function createWindow(): void {
     backgroundColor: '#0a0a0a',
     titleBarStyle: 'hiddenInset',
     show: false,
+    ...(iconPath && { icon: iconPath }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -42,6 +50,12 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+  // Set dock icon for macOS in development
+  if (process.platform === 'darwin' && is.dev) {
+    const dockIconPath = join(__dirname, '../../src/AppIcon.icns')
+    app.dock.setIcon(dockIconPath)
+  }
+  
   createWindow()
   
   try {

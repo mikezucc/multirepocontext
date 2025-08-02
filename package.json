@@ -19,6 +19,15 @@
   "license": "ISC",
   "description": "",
   "build": {
+    "appId": "com.multirepocontext.app",
+    "productName": "MultiRepoContext",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "node_modules/**/*"
+    ],
     "npmRebuild": true,
     "nodeGypRebuild": false,
     "buildDependenciesFromSource": false,
@@ -30,7 +39,47 @@
           "**/*"
         ]
       }
-    ]
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "darkModeSupport": true
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "build",
+      "category": "Development"
+    }
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
