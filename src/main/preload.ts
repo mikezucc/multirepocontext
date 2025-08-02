@@ -57,10 +57,8 @@ const api = {
       'revoke-repository-access-result',
       'accessible-repositories'
     ]
-    console.log('Preload: Setting up listener for channel:', channel);
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (event, ...args) => callback(...args))
-      console.log('Preload: Listener set up for channel:', channel);
     }
   },
   removeListener: (channel: string, callback: Function) => {

@@ -9,6 +9,7 @@ import { promptHistoryStore } from './database/promptHistoryStore'
 import { v4 as uuidv4 } from 'uuid'
 import { repositoryAccessStore } from './database/repositoryAccessStore'
 import { repositoryStore } from './database/repositoryStore'
+import log from 'electron-log/main'
 
 export class SearchServer {
   private app: express.Application
@@ -55,7 +56,7 @@ export class SearchServer {
           })
         }
 
-        console.log('[SearchServer] Processing request for repository:', repositoryId)
+        log.info('[SearchServer] Processing request for repository:', repositoryId)
 
         // Create prompt history entry
         const promptHistoryId = uuidv4()
@@ -67,18 +68,18 @@ export class SearchServer {
           options
         )
 
-        console.log('[SearchServer] [BEFORE] Expanded prompt:', prompt)
+        log.info('[SearchServer] [BEFORE] Expanded prompt:', prompt)
 
         // Expand the prompt with related keywords
         const expandedPrompt = await promptExpansionService.expandPromptForSearch(prompt)
-        console.log('[SearchServer] Expanded prompt:', expandedPrompt)
+        log.info('[SearchServer] Expanded prompt:', expandedPrompt)
 
         // Generate embedding for the expanded prompt
         const queryEmbedding = await embeddingGenerator.generateEmbedding(expandedPrompt)
 
         // Get accessible repositories for this repository
         const accessibleRepositories = repositoryAccessStore.getAccessibleRepositories(repositoryId)
-        console.log('[SearchServer] Accessible repositories for', repositoryId, ':', accessibleRepositories)
+        log.info('[SearchServer] Accessible repositories for', repositoryId, ':', accessibleRepositories)
 
         // Perform hybrid search with expanded prompt across accessible repositories
         const searchResults = await hybridSearch.hybridSearch(
@@ -166,7 +167,7 @@ export class SearchServer {
 
         res.json(response)
       } catch (error) {
-        console.error('[SearchServer] Error processing request:', error)
+        log.error('[SearchServer] Error processing request:', error)
         res.status(500).json({
           success: false,
           error: error instanceof Error ? error.message : 'Internal server error'
@@ -192,7 +193,7 @@ export class SearchServer {
           lastUpdated: result.lastUpdated
         })
       } catch (error) {
-        console.error('[SearchServer] Error checking repository status:', error)
+        log.error('[SearchServer] Error checking repository status:', error)
         res.status(500).json({ error: 'Failed to check repository status' })
       }
     })
@@ -213,7 +214,7 @@ export class SearchServer {
           history
         })
       } catch (error) {
-        console.error('[SearchServer] Error fetching prompt history:', error)
+        log.error('[SearchServer] Error fetching prompt history:', error)
         res.status(500).json({ 
           success: false,
           error: 'Failed to fetch prompt history' 
@@ -226,18 +227,18 @@ export class SearchServer {
       try {
         const { limit = 100 } = req.query
         
-        console.log('[SearchServer] Getting all prompt history with limit:', limit)
+        log.info('[SearchServer] Getting all prompt history with limit:', limit)
         const history = promptHistoryStore.getAllPromptHistory(
           parseInt(limit as string)
         )
-        console.log('[SearchServer] Returning', history.length, 'history entries')
+        log.info('[SearchServer] Returning', history.length, 'history entries')
         
         res.json({
           success: true,
           history
         })
       } catch (error) {
-        console.error('[SearchServer] Error fetching all prompt history:', error)
+        log.error('[SearchServer] Error fetching all prompt history:', error)
         res.status(500).json({ 
           success: false,
           error: 'Failed to fetch prompt history' 
@@ -257,7 +258,7 @@ export class SearchServer {
           results
         })
       } catch (error) {
-        console.error('[SearchServer] Error fetching prompt results:', error)
+        log.error('[SearchServer] Error fetching prompt results:', error)
         res.status(500).json({ 
           success: false,
           error: 'Failed to fetch prompt results' 
@@ -287,7 +288,7 @@ export class SearchServer {
           history
         })
       } catch (error) {
-        console.error('[SearchServer] Error searching prompt history:', error)
+        log.error('[SearchServer] Error searching prompt history:', error)
         res.status(500).json({ 
           success: false,
           error: 'Failed to search prompt history' 
@@ -301,13 +302,13 @@ export class SearchServer {
       try {
         // Start on fixed port 3989
         this.server = this.app.listen(this.port, '127.0.0.1', () => {
-          console.log(`[SearchServer] Server started on port ${this.port}`)
+          log.info(`[SearchServer] Server started on port ${this.port}`)
           resolve(this.port)
         })
         
         this.server.on('error', (error: any) => {
           if (error.code === 'EADDRINUSE') {
-            console.error(`[SearchServer] Port ${this.port} is already in use. Please close any other application using this port.`)
+            log.error(`[SearchServer] Port ${this.port} is already in use. Please close any other application using this port.`)
             reject(new Error(`Port ${this.port} is already in use`))
           } else {
             reject(error)
@@ -323,7 +324,7 @@ export class SearchServer {
     return new Promise((resolve) => {
       if (this.server) {
         this.server.close(() => {
-          console.log('[SearchServer] Server stopped')
+          log.info('[SearchServer] Server stopped')
           this.server = null
           this.port = 0
           resolve()

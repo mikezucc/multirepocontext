@@ -7,6 +7,7 @@ import { Repository } from '../shared/types'
 import { documentIndexer } from './vectordb/indexer'
 import { repositoryStore } from './database/repositoryStore'
 import { repositoryAccessStore } from './database/repositoryAccessStore'
+import log from 'electron-log/main'
 
 export class IpcHandler {
   private daemon: ChildProcess | null = null
@@ -27,7 +28,7 @@ export class IpcHandler {
 
   setServerPort(port: number) {
     this.serverPort = port
-    console.log(`[IPC] Server port set to ${port}`)
+    log.info(`[IPC] Server port set to ${port}`)
   }
 
   private generateRepositoryId(repoPath: string): string {
@@ -56,7 +57,7 @@ export class IpcHandler {
         
         // Check if this repository already exists
         if (this.repositories.has(repoId)) {
-          console.log(`Repository already exists with ID: ${repoId}`)
+          log.info(`Repository already exists with ID: ${repoId}`)
           return
         }
         
@@ -74,7 +75,7 @@ export class IpcHandler {
         try {
           repositoryStore.addRepository(repository.id, repository.name, repository.path)
         } catch (error) {
-          console.error('Failed to save repository to store:', error)
+          log.error('Failed to save repository to store:', error)
         }
         
         // Send updated repository list
@@ -96,7 +97,7 @@ export class IpcHandler {
       try {
         repositoryStore.removeRepository(id)
       } catch (error) {
-        console.error('Failed to remove repository from store:', error)
+        log.error('Failed to remove repository from store:', error)
       }
       
       this.sendToDaemon('remove-repository', { id })
@@ -153,7 +154,7 @@ export class IpcHandler {
     })
 
     ipcMain.on('get-directory-tree', (event, data) => {
-      console.log('IPC: get-directory-tree request received for:', data)
+      log.info('IPC: get-directory-tree request received for:', data)
       const { id } = data
       this.sendToDaemon('get-directory-tree', { id })
     })
@@ -164,13 +165,13 @@ export class IpcHandler {
     })
 
     ipcMain.on('process-directory', async (event, data) => {
-      console.log('IPC: process-directory request received for:', data)
+      log.info('IPC: process-directory request received for:', data)
       const { repositoryId, directoryPath } = data
       
       // Get repository info from our map
       const repository = this.repositories.get(repositoryId)
       if (!repository) {
-        console.error('IPC: Repository not found:', repositoryId)
+        log.error('IPC: Repository not found:', repositoryId)
         return
       }
       
@@ -183,14 +184,14 @@ export class IpcHandler {
     })
 
     ipcMain.on('read-file', async (event, data) => {
-      console.log('IPC: read-file request received for:', data)
+      log.info('IPC: read-file request received for:', data)
       const { path } = data
       try {
         const content = fs.readFileSync(path, 'utf-8')
-        console.log('IPC: Successfully read file, content length:', content.length)
+        log.info('IPC: Successfully read file, content length:', content.length)
         event.reply('file-content', { path, content, error: null })
       } catch (error) {
-        console.error('IPC: Error reading file:', error)
+        log.error('IPC: Error reading file:', error)
         event.reply('file-content', { 
           path, 
           content: null, 
@@ -200,14 +201,14 @@ export class IpcHandler {
     })
 
     ipcMain.on('save-file', async (event, data) => {
-      console.log('IPC: save-file request received for:', data.path)
+      log.info('IPC: save-file request received for:', data.path)
       const { path, content } = data
       try {
         fs.writeFileSync(path, content, 'utf-8')
-        console.log('IPC: Successfully saved file')
+        log.info('IPC: Successfully saved file')
         event.reply('file-saved', { path, success: true })
       } catch (error) {
-        console.error('IPC: Error saving file:', error)
+        log.error('IPC: Error saving file:', error)
         event.reply('file-saved', { 
           path, 
           success: false, 
@@ -217,12 +218,12 @@ export class IpcHandler {
     })
 
     ipcMain.on('setup-mcp-server', (event, data) => {
-      console.log('IPC: setup-mcp-server request received for:', data)
+      log.info('IPC: setup-mcp-server request received for:', data)
       const { id } = data
       const repository = this.repositories.get(id)
       
       if (!repository) {
-        console.error('IPC: Repository not found:', id)
+        log.error('IPC: Repository not found:', id)
         return
       }
       
@@ -235,12 +236,12 @@ export class IpcHandler {
     })
 
     ipcMain.on('regenerate-embeddings', async (event, data) => {
-      console.log('IPC: regenerate-embeddings request received for:', data)
+      log.info('IPC: regenerate-embeddings request received for:', data)
       const { id } = data
       const repository = this.repositories.get(id)
       
       if (!repository) {
-        console.error('IPC: Repository not found:', id)
+        log.error('IPC: Repository not found:', id)
         return
       }
       
@@ -257,19 +258,19 @@ export class IpcHandler {
         const stats = await vectorDB.getTokenUsageStats()
         event.reply('token-usage-update', stats)
       } catch (error) {
-        console.error('[IPC] Error getting token usage:', error)
+        log.error('[IPC] Error getting token usage:', error)
       }
     })
 
     ipcMain.on('get-vector-stats', async (event, data) => {
       const { id } = data
       try {
-        console.log('IPC: get-vector-stats request received for:', id)
+        log.info('IPC: get-vector-stats request received for:', id)
         const stats = await this.getVectorStats(id)
-        console.log('IPC: get-vector-stats request responding', stats);
+        log.info('IPC: get-vector-stats request responding', stats);
         event.reply('vector-stats', { repositoryId: id, stats })
       } catch (error) {
-        console.error('IPC: Error getting vector stats:', error)
+        log.error('IPC: Error getting vector stats:', error)
         event.reply('vector-stats', { 
           repositoryId: id, 
           stats: null,
@@ -281,11 +282,11 @@ export class IpcHandler {
     ipcMain.on('debug-search', async (event, data) => {
       const { repositoryId, query, limit = 10 } = data
       try {
-        console.log('IPC: debug-search request received for:', data);
+        log.info('IPC: debug-search request received for:', data);
         const results = await this.debugSearch(repositoryId, query, limit)
         event.reply('debug-search-results', { repositoryId, results })
       } catch (error) {
-        console.error('IPC: Error in debug search:', error)
+        log.error('IPC: Error in debug search:', error)
         event.reply('debug-search-results', { 
           repositoryId, 
           error: error instanceof Error ? error.message : 'Search failed' 
@@ -296,7 +297,7 @@ export class IpcHandler {
     ipcMain.on('reset-vector-database', async (event, data) => {
       const { repositoryId } = data
       try {
-        console.log('IPC: reset-vector-database request received for:', repositoryId)
+        log.info('IPC: reset-vector-database request received for:', repositoryId)
         
         // Delete all vector data for this repository
         await documentIndexer.removeRepository(repositoryId)
@@ -311,7 +312,7 @@ export class IpcHandler {
         const stats = await this.getVectorStats(repositoryId)
         event.reply('vector-stats', { repositoryId, stats })
       } catch (error) {
-        console.error('IPC: Error resetting vector database:', error)
+        log.error('IPC: Error resetting vector database:', error)
         event.reply('vector-database-reset', { 
           repositoryId, 
           success: false,
@@ -327,7 +328,7 @@ export class IpcHandler {
           this.daemon.send({ type: 'get-prompt-config', data: {} })
         }
       } catch (error) {
-        console.error('IPC: Error getting prompt config:', error)
+        log.error('IPC: Error getting prompt config:', error)
         event.reply('prompt-config', { error: error instanceof Error ? error.message : 'Failed to get prompt config' })
       }
     })
@@ -340,7 +341,7 @@ export class IpcHandler {
         }
         event.reply('prompt-config-saved', { success: true })
       } catch (error) {
-        console.error('IPC: Error saving prompt config:', error)
+        log.error('IPC: Error saving prompt config:', error)
         event.reply('prompt-config-saved', { 
           success: false, 
           error: error instanceof Error ? error.message : 'Failed to save prompt config' 
@@ -353,7 +354,7 @@ export class IpcHandler {
       try {
         repositoryStore.updateLastOpened(id)
       } catch (error) {
-        console.error('IPC: Error updating repository last opened:', error)
+        log.error('IPC: Error updating repository last opened:', error)
       }
     })
 
@@ -368,7 +369,7 @@ export class IpcHandler {
           repositoryId 
         })
       } catch (error) {
-        console.error('IPC: Error getting repository access permissions:', error)
+        log.error('IPC: Error getting repository access permissions:', error)
         event.reply('repository-access-permissions', { 
           success: false, 
           error: error instanceof Error ? error.message : 'Unknown error' 
@@ -391,7 +392,7 @@ export class IpcHandler {
           targetRepositoryId
         })
       } catch (error) {
-        console.error('IPC: Error granting repository access:', error)
+        log.error('IPC: Error granting repository access:', error)
         event.reply('grant-repository-access-result', { 
           success: false, 
           error: error instanceof Error ? error.message : 'Unknown error' 
@@ -409,7 +410,7 @@ export class IpcHandler {
           targetRepositoryId
         })
       } catch (error) {
-        console.error('IPC: Error revoking repository access:', error)
+        log.error('IPC: Error revoking repository access:', error)
         event.reply('revoke-repository-access-result', { 
           success: false, 
           error: error instanceof Error ? error.message : 'Unknown error' 
@@ -427,7 +428,7 @@ export class IpcHandler {
           repositoryId 
         })
       } catch (error) {
-        console.error('IPC: Error getting accessible repositories:', error)
+        log.error('IPC: Error getting accessible repositories:', error)
         event.reply('accessible-repositories', { 
           success: false, 
           error: error instanceof Error ? error.message : 'Unknown error' 
@@ -452,7 +453,7 @@ export class IpcHandler {
       this.daemon.stdout.on('data', (data) => {
         const lines = data.toString().split('\n').filter(Boolean)
         lines.forEach((line: string) => {
-          console.log('Daemon:', line)
+          log.info('Daemon:', line)
           if (line.includes('[DAEMON]')) {
             this.sendToRenderer('daemon-status', {
               connected: true,
@@ -467,7 +468,7 @@ export class IpcHandler {
     // Capture daemon stderr
     if (this.daemon.stderr) {
       this.daemon.stderr.on('data', (data) => {
-        console.error('Daemon Error:', data.toString())
+        log.error('Daemon Error:', data.toString())
         this.sendToRenderer('daemon-status', {
           connected: true,
           message: data.toString(),
@@ -477,7 +478,7 @@ export class IpcHandler {
     }
 
     this.daemon.on('error', (error) => {
-      console.error('Daemon error:', error)
+      log.error('Daemon error:', error)
       this.sendToRenderer('daemon-status', {
         connected: false,
         message: `Daemon error: ${error.message}`,
@@ -486,7 +487,7 @@ export class IpcHandler {
     })
 
     this.daemon.on('exit', (code) => {
-      console.log(`Daemon exited with code ${code}`)
+      log.info(`Daemon exited with code ${code}`)
       this.sendToRenderer('daemon-status', {
         connected: false,
         message: `Daemon exited with code ${code}`,
@@ -547,7 +548,7 @@ export class IpcHandler {
             }
           })
           .catch(error => {
-            console.error('[IPC] Error fetching vector stats on directory load:', error)
+            log.error('[IPC] Error fetching vector stats on directory load:', error)
           })
         break
       
@@ -603,7 +604,7 @@ export class IpcHandler {
     try {
       await documentIndexer.indexFile(data.repositoryId, data.filePath, data.content)
     } catch (error) {
-      console.error('[IPC] Error indexing file:', error)
+      log.error('[IPC] Error indexing file:', error)
     }
   }
 
@@ -659,7 +660,7 @@ export class IpcHandler {
       fs.mkdirSync(configDir, { recursive: true })
       fs.writeFileSync(configPath, JSON.stringify({ apiKey }, null, 2))
     } catch (e) {
-      console.error('Failed to save API key:', e)
+      log.error('Failed to save API key:', e)
     }
   }
 
@@ -702,19 +703,19 @@ export class IpcHandler {
       
       fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 2))
     } catch (e) {
-      console.error('Failed to save provider settings:', e)
+      log.error('Failed to save provider settings:', e)
     }
   }
 
   private async loadStoredRepositories() {
-    console.log('[IPC] loadStoredRepositories called')
+    log.info('[IPC] loadStoredRepositories called')
     try {
       // Wait a bit for the daemon to be ready and server port to be set
       setTimeout(() => {
-        console.log(`[IPC] Checking server port: ${this.serverPort}`)
+        log.info(`[IPC] Checking server port: ${this.serverPort}`)
         // Don't start MCP servers if server port is not set yet
         if (this.serverPort === 0) {
-          console.log('[IPC] Server port not set yet, delaying MCP server startup')
+          log.info('[IPC] Server port not set yet, delaying MCP server startup')
           setTimeout(() => this.loadStoredRepositories(), 2000)
           return
         }
@@ -737,11 +738,11 @@ export class IpcHandler {
             this.sendToDaemon('add-repository', repository)
             
             // Start MCP server for this repository
-            console.log(`[IPC] Starting MCP server for repository: ${repository.name}`)
+            log.info(`[IPC] Starting MCP server for repository: ${repository.name}`)
             this.startMCPServer(repository.id, repository.path, repository.name)
           } else {
             // Remove from store if path no longer exists
-            console.log(`Repository path no longer exists, removing: ${stored.path}`)
+            log.info(`Repository path no longer exists, removing: ${stored.path}`)
             repositoryStore.removeRepository(stored.id)
           }
         }
@@ -752,7 +753,7 @@ export class IpcHandler {
         }
       }, 1000)
     } catch (error) {
-      console.error('Failed to load stored repositories:', error)
+      log.error('Failed to load stored repositories:', error)
     }
   }
 
@@ -825,14 +826,14 @@ export class IpcHandler {
       const stats = await vectorDB.getTokenUsageStats()
       this.sendToRenderer('token-usage-update', stats)
     } catch (error) {
-      console.error('[IPC] Error tracking token usage:', error)
+      log.error('[IPC] Error tracking token usage:', error)
     }
   }
 
   private startMCPServer(repositoryId: string, repositoryPath: string, repositoryName: string): void {
     // Check if MCP server is already running for this repository
     if (this.mcpServers.has(repositoryId)) {
-      console.log(`[IPC] MCP server already running for repository ${repositoryId}`)
+      log.info(`[IPC] MCP server already running for repository ${repositoryId}`)
       return
     }
 
@@ -840,7 +841,7 @@ export class IpcHandler {
     
     // Check if MCP server file exists
     if (!fs.existsSync(mcpServerPath)) {
-      console.warn(`[IPC] MCP server file not found for repository ${repositoryId}: ${mcpServerPath}`)
+      log.warn(`[IPC] MCP server file not found for repository ${repositoryId}: ${mcpServerPath}`)
       // Try again in a few seconds as the daemon might still be creating it
       setTimeout(() => {
         if (fs.existsSync(mcpServerPath) && this.repositories.has(repositoryId)) {
@@ -853,7 +854,7 @@ export class IpcHandler {
       return
     }
 
-    console.log(`[IPC] Starting MCP server for repository ${repositoryId}`)
+    log.info(`[IPC] Starting MCP server for repository ${repositoryId}`)
 
     // Spawn the MCP server process
     const mcpProcess = spawn('node', [mcpServerPath], {
@@ -868,19 +869,19 @@ export class IpcHandler {
     })
 
     mcpProcess.on('error', (error) => {
-      console.error(`[IPC] MCP server error for ${repositoryId}:`, error)
+      log.error(`[IPC] MCP server error for ${repositoryId}:`, error)
       this.mcpServers.delete(repositoryId)
       this.sendMCPServerStatus()
     })
 
     mcpProcess.on('exit', (code, signal) => {
-      console.log(`[IPC] MCP server exited for ${repositoryId}: code=${code}, signal=${signal}`)
+      log.info(`[IPC] MCP server exited for ${repositoryId}: code=${code}, signal=${signal}`)
       this.mcpServers.delete(repositoryId)
       this.sendMCPServerStatus()
       
       // Auto-restart if it crashed unexpectedly
       if (code !== 0 && signal !== 'SIGTERM' && this.repositories.has(repositoryId)) {
-        console.log(`[IPC] Restarting MCP server for ${repositoryId} in 5 seconds...`)
+        log.info(`[IPC] Restarting MCP server for ${repositoryId} in 5 seconds...`)
         setTimeout(() => {
           const repo = this.repositories.get(repositoryId)
           if (repo) {
@@ -892,12 +893,12 @@ export class IpcHandler {
 
     // Log stdout for debugging
     mcpProcess.stdout?.on('data', (data) => {
-      console.log(`[MCP-${repositoryId}]:`, data.toString().trim())
+      log.info(`[MCP-${repositoryId}]:`, data.toString().trim())
     })
 
     // Log stderr for debugging
     mcpProcess.stderr?.on('data', (data) => {
-      console.error(`[MCP-${repositoryId}] Error:`, data.toString().trim())
+      log.error(`[MCP-${repositoryId}] Error:`, data.toString().trim())
     })
 
     this.mcpServers.set(repositoryId, mcpProcess)
@@ -909,7 +910,7 @@ export class IpcHandler {
   private stopMCPServer(repositoryId: string): void {
     const mcpProcess = this.mcpServers.get(repositoryId)
     if (mcpProcess) {
-      console.log(`[IPC] Stopping MCP server for repository ${repositoryId}`)
+      log.info(`[IPC] Stopping MCP server for repository ${repositoryId}`)
       mcpProcess.kill('SIGTERM')
       this.mcpServers.delete(repositoryId)
       
@@ -919,7 +920,7 @@ export class IpcHandler {
   }
 
   private stopAllMCPServers(): void {
-    console.log('[IPC] Stopping all MCP servers...')
+    log.info('[IPC] Stopping all MCP servers...')
     for (const [repositoryId, mcpProcess] of this.mcpServers) {
       mcpProcess.kill('SIGTERM')
     }

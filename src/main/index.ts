@@ -4,6 +4,7 @@ import { is } from '@electron-toolkit/utils'
 import { IpcHandler } from './ipc'
 import { vectorDB } from './vectordb/database'
 import { searchServer } from './server'
+import log from 'electron-log/main'
 
 let mainWindow: BrowserWindow | null = null
 let ipcHandler: IpcHandler | null = null
@@ -49,9 +50,25 @@ function createWindow(): void {
   }
 }
 
+// Configure electron-log
+log.initialize()
+log.transports.file.level = 'info'
+log.transports.console.level = is.dev ? 'debug' : 'warn'
+
+// Log file locations:
+// macOS: ~/Library/Logs/{app name}/main.log
+// Windows: %USERPROFILE%\AppData\Roaming\{app name}\logs\main.log
+// Linux: ~/.config/{app name}/logs/main.log
+
+log.info('Application starting...')
+log.info('App version:', app.getVersion())
+log.info('Electron version:', process.versions.electron)
+log.info('Node version:', process.versions.node)
+log.info('Platform:', process.platform)
+
 app.whenReady().then(async () => {
   // Set dock icon for macOS in development
-  if (process.platform === 'darwin' && is.dev) {
+  if (process.platform === 'darwin' && is.dev && app.dock) {
     const dockIconPath = join(__dirname, '../../src/AppIcon.icns')
     app.dock.setIcon(dockIconPath)
   }
@@ -60,15 +77,15 @@ app.whenReady().then(async () => {
   
   try {
     // Initialize vector database
-    console.log('[Main] Initializing vector database...')
+    log.info('[Main] Initializing vector database...')
     await vectorDB.initialize()
     
     // Start search server
-    console.log('[Main] Starting search server...')
+    log.info('[Main] Starting search server...')
     serverPort = await searchServer.start()
-    console.log('[Main] Search server started on port:', serverPort)
+    log.info('[Main] Search server started on port:', serverPort)
   } catch (error) {
-    console.error('[Main] Failed to initialize services:', error)
+    log.error('[Main] Failed to initialize services:', error)
   }
   
   // Initialize IPC handler

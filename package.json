@@ -105,6 +105,7 @@
     "axios": "^1.10.0",
     "better-sqlite3": "^12.2.0",
     "chokidar": "^4.0.3",
+    "electron-log": "^5.4.2",
     "express": "^5.1.0",
     "gitignore-parser": "^0.0.2",
     "lucide-react": "^0.525.0",
