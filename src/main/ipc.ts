@@ -442,6 +442,11 @@ export class IpcHandler {
     const daemonPath = path.join(__dirname, 'daemon.js')
     
     this.daemon = spawnNode(daemonPath)
+    
+    if (!this.daemon) {
+      log.error('Failed to start daemon')
+      return
+    }
 
     this.daemon.on('message', (message: any) => {
       this.handleDaemonMessage(message)
@@ -866,13 +871,13 @@ export class IpcHandler {
       stdio: ['pipe', 'pipe', 'pipe']
     })
 
-    mcpProcess.on('error', (error) => {
+    mcpProcess.on('error', (error: Error) => {
       log.error(`[IPC] MCP server error for ${repositoryId}:`, error)
       this.mcpServers.delete(repositoryId)
       this.sendMCPServerStatus()
     })
 
-    mcpProcess.on('exit', (code, signal) => {
+    mcpProcess.on('exit', (code: number | null, signal: string | null) => {
       log.info(`[IPC] MCP server exited for ${repositoryId}: code=${code}, signal=${signal}`)
       this.mcpServers.delete(repositoryId)
       this.sendMCPServerStatus()
@@ -890,12 +895,12 @@ export class IpcHandler {
     })
 
     // Log stdout for debugging
-    mcpProcess.stdout?.on('data', (data) => {
+    mcpProcess.stdout?.on('data', (data: Buffer) => {
       log.info(`[MCP-${repositoryId}]:`, data.toString().trim())
     })
 
     // Log stderr for debugging
-    mcpProcess.stderr?.on('data', (data) => {
+    mcpProcess.stderr?.on('data', (data: Buffer) => {
       log.error(`[MCP-${repositoryId}] Error:`, data.toString().trim())
     })
 
