@@ -8,6 +8,7 @@ import { documentIndexer } from './vectordb/indexer'
 import { repositoryStore } from './database/repositoryStore'
 import { repositoryAccessStore } from './database/repositoryAccessStore'
 import log from 'electron-log/main'
+import { spawnNode } from './utils/nodeUtils'
 
 export class IpcHandler {
   private daemon: ChildProcess | null = null
@@ -440,9 +441,7 @@ export class IpcHandler {
   private startDaemon() {
     const daemonPath = path.join(__dirname, 'daemon.js')
     
-    this.daemon = spawn('node', [daemonPath], {
-      stdio: ['inherit', 'pipe', 'pipe', 'ipc']
-    })
+    this.daemon = spawnNode(daemonPath)
 
     this.daemon.on('message', (message: any) => {
       this.handleDaemonMessage(message)
@@ -857,9 +856,8 @@ export class IpcHandler {
     log.info(`[IPC] Starting MCP server for repository ${repositoryId}`)
 
     // Spawn the MCP server process
-    const mcpProcess = spawn('node', [mcpServerPath], {
+    const mcpProcess = spawnNode(mcpServerPath, [], {
       env: {
-        ...process.env,
         MULTIREPOCONTEXT_SERVER_PORT: this.serverPort.toString(),
         MULTIREPOCONTEXT_REPOSITORY_ID: repositoryId,
         MULTIREPOCONTEXT_REPOSITORY_PATH: repositoryPath,

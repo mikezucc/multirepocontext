@@ -12,11 +12,21 @@ let serverPort: number = 0
 
 function createWindow(): void {
   // Set the icon path based on environment
-  const iconPath = is.dev 
-    ? join(__dirname, '../../src/AppIcon.icns')
-    : process.platform === 'darwin'
-      ? undefined // macOS uses icon from app bundle
-      : join(process.resourcesPath, '../build/icon.png')
+  let iconPath: string | undefined
+  
+  if (is.dev) {
+    const devIconPath = join(__dirname, '../../src/AppIcon.icns')
+    const fs = require('fs')
+    if (fs.existsSync(devIconPath)) {
+      iconPath = devIconPath
+    } else {
+      log.warn('Window icon not found at:', devIconPath)
+    }
+  } else if (process.platform !== 'darwin') {
+    // Windows/Linux production icon
+    iconPath = join(process.resourcesPath, '../build/icon.png')
+  }
+  // macOS production uses icon from app bundle, so iconPath stays undefined
 
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -69,8 +79,17 @@ log.info('Platform:', process.platform)
 app.whenReady().then(async () => {
   // Set dock icon for macOS in development
   if (process.platform === 'darwin' && is.dev && app.dock) {
-    const dockIconPath = join(__dirname, '../../src/AppIcon.icns')
-    app.dock.setIcon(dockIconPath)
+    try {
+      const dockIconPath = join(__dirname, '../../src/AppIcon.icns')
+      const fs = require('fs')
+      if (fs.existsSync(dockIconPath)) {
+        app.dock.setIcon(dockIconPath)
+      } else {
+        log.warn('Dock icon not found at:', dockIconPath)
+      }
+    } catch (error) {
+      log.warn('Failed to set dock icon:', error)
+    }
   }
   
   createWindow()
