@@ -25,7 +25,7 @@ export class EmbeddingGenerator {
       // Load the embedding pipeline
       this.model = await pipeline('feature-extraction', this.modelName, {
         dtype: 'q4', // Use quantized model for smaller size
-        device: 'webgpu'
+        device: 'cpu'
       })
       
       this.isInitialized = true
