@@ -1,14 +1,14 @@
 # MultiRepoContext
 
-An AI-powered tribal knowledge documentation system that automatically generates comprehensive README files for different code regions, making codebases more accessible to AI coding assistants.
+An AI-powered cross-repo knowledge system that generates comprehensive READMEs, making codebases more accessible to AI coding assistants.
+
+Read more about this here: https://onpaper.dev/p/multirepocontext-dealing-with-repository-drift-1754455659640-59iebq
 
 ## Features
 
-- **AI-Powered Analysis**: Uses Anthropic's Claude API to understand code purpose and context
+- **AI-Powered Analysis**: Uses Anthropic or OpenAI API to understand code purpose and context
 - **Automatic Documentation**: Generates detailed info.multirepocontext.md files for code regions
-- **Real-time Monitoring**: Watches for file changes and updates documentation incrementally
-- **Terminal Aesthetic**: Elegant retro terminal UI with master-detail layout
-- **Multi-Repository Support**: Manage documentation for multiple projects simultaneously
+- **Multi-Repository Support**: Manage permissions for cross-repo access
 
 ## Getting Started
 
@@ -16,13 +16,12 @@ An AI-powered tribal knowledge documentation system that automatically generates
 
 - Node.js 18+
 - npm or yarn
-- Anthropic API key
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/multirepocontext.git
+git clone https://github.com/mikezucc/multirepocontext.git
 cd multirepocontext
 
 # Install dependencies
@@ -46,16 +45,17 @@ npm run dist
 
 1. Launch MultiRepoContext
 2. Click "[+] Add Repository" to add a local repository
-3. Configure your Anthropic API key in settings
+3. Configure your Model API key in settings
 4. MultiRepoContext will automatically analyze your codebase and generate documentation
 5. Browse generated documentation in the detail pane
 
 ## Architecture
 
-- **Electron Desktop App**: Main UI for managing repositories
+- **Electron**: Main UI for managing repositories
 - **MultiRepoContext Daemon**: Background process that watches files and orchestrates analysis
 - **LLM Integration**: Uses Claude API for intelligent code understanding
 - **File Watcher**: Monitors changes and triggers incremental updates
+- **SQLite-Vec**: Vector database for storing embeddings
 
 ## Development
 
